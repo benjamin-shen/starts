@@ -1,6 +1,7 @@
 **/target/*
 starts-core/target/
-starts-plugin/target/
+starts-maven-plugin/target/
+starts-gradle-plugin/target/
 .classpath
 .project
 .settings/

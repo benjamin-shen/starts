@@ -261,6 +261,6 @@
 
   <modules>
     <module>starts-core</module>
-    <module>starts-plugin</module>
+    <module>starts-maven-plugin</module>
   </modules>
 </project>
