@@ -15,7 +15,7 @@ class StartsPluginTest {
     @Test void pluginRegistersATask() {
         // Create a test project and apply the plugin
         Project project = ProjectBuilder.builder().build();
-        project.getPlugins().apply("edu.illinois.starts.plugin.gradle");
+        project.getPlugins().apply("edu.illinois.starts");
 
         // Verify the result
         assertNotNull(project.getTasks().findByName("startsHelp"));

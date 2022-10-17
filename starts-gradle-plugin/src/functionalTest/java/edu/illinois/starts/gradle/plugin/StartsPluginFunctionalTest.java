@@ -34,7 +34,7 @@ class StartsPluginFunctionalTest {
         writeString(getSettingsFile(), "");
         writeString(getBuildFile(),
             "plugins {" +
-            "  id('edu.illinois.starts.gradle.plugin')" +
+            "  id('edu.illinois.starts')" +
             "}");
 
         // Run the build
@@ -46,7 +46,7 @@ class StartsPluginFunctionalTest {
         BuildResult result = runner.build();
 
         // Verify the result
-        assertTrue(result.getOutput().startsWith("A tool for STAtic Regression Test Selection."));
+        assertTrue(result.getOutput().contains("A tool for STAtic Regression Test Selection."));
     }
 
     private void writeString(File file, String string) throws IOException {
