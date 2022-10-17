@@ -9,6 +9,7 @@
 plugins {
     id 'java-gradle-plugin'
     id 'maven-publish'
+    id 'com.gradle.plugin-publish' version '1.0.0-rc-1'
 }
 
 project.description = 'STARTS Gradle Plugin'
@@ -25,12 +26,19 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 }
 
+pluginBundle {
+    website = 'https://github.com/TestingResearchIllinois/starts'
+    vcsUrl = 'https://github.com/TestingResearchIllinois/starts'
+    tags = ['starts', 'regression', 'test']
+}
+
 gradlePlugin {
-    // Define the plugin
     plugins {
-        greeting {
-            id = 'edu.illinois.starts.greeting'
-            implementationClass = 'edu.illinois.starts.StartsPlugin'
+        starts {
+            id = 'edu.illinois.starts'
+            displayName = 'STARTS plugin for Gradle'
+            description = 'STARTS plugin for Gradle'
+            implementationClass = 'edu.illinois.starts.gradle.plugin.StartsPlugin'
         }
     }
 }

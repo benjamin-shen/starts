@@ -1,0 +1,6 @@
+A tool for STAtic Regression Test Selection.
+
+This plugin has 1 task:
+
+startsHelp
+    Print this help message
