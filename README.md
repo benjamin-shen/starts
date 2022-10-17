@@ -6,7 +6,7 @@
 [![Coverage](.github/badges/jacoco.svg)](https://github.com/TestingResearchIllinois/starts/actions/workflows/coverage.yml)
 
 STARTS is a static class-level regression test selection tool
-for Maven-based Java programs.
+for Java programs using Maven or Gradle.
 
 ## Prerequisites
 
