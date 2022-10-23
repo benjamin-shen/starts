@@ -6,7 +6,10 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.util.Scanner;
 
-public class StartsHelp extends DefaultTask {
+/**
+ * Displays help message for STARTS plugin.
+ */
+public class HelpTask extends DefaultTask {
     public static final String NAME = "startsHelp";
 
     @TaskAction

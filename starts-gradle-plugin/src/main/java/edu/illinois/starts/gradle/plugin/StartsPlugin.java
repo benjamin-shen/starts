@@ -3,7 +3,8 @@
  */
 package edu.illinois.starts.gradle.plugin;
 
-import edu.illinois.starts.gradle.plugin.tasks.StartsHelp;
+import edu.illinois.starts.gradle.plugin.tasks.CleanTask;
+import edu.illinois.starts.gradle.plugin.tasks.HelpTask;
 import org.gradle.api.Project;
 import org.gradle.api.Plugin;
 
@@ -12,7 +13,7 @@ import org.gradle.api.Plugin;
  */
 public class StartsPlugin implements Plugin<Project> {
     public void apply(Project project) {
-        // Register a task
-        project.getTasks().create(StartsHelp.NAME, StartsHelp.class);
+        project.getTasks().create(HelpTask.NAME, HelpTask.class);
+        project.getTasks().create(CleanTask.NAME, CleanTask.class);
     }
 }
