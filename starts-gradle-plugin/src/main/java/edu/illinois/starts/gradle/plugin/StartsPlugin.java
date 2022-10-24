@@ -5,15 +5,23 @@ package edu.illinois.starts.gradle.plugin;
 
 import edu.illinois.starts.gradle.plugin.tasks.CleanTask;
 import edu.illinois.starts.gradle.plugin.tasks.HelpTask;
-import org.gradle.api.Project;
 import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
 
 /**
- * A simple 'hello world' plugin.
+ * STARTS Gradle Plugin
  */
 public class StartsPlugin implements Plugin<Project> {
+    private final String STARTS_GROUP = "starts";
+
     public void apply(Project project) {
-        project.getTasks().create(HelpTask.NAME, HelpTask.class);
-        project.getTasks().create(CleanTask.NAME, CleanTask.class);
+        Task helpTask = project.getTasks().create(HelpTask.NAME, HelpTask.class);
+        helpTask.setDescription(HelpTask.DESCRIPTION);
+        helpTask.setGroup(STARTS_GROUP);
+
+        Task cleanTask = project.getTasks().create(CleanTask.NAME, CleanTask.class);
+        cleanTask.setDescription(CleanTask.DESCRIPTION);
+        cleanTask.setGroup(STARTS_GROUP);
     }
 }

@@ -59,6 +59,8 @@ public interface StartsConstants {
     String CHANGED_CLASSES = "changed-classes";
     String CHECK_IF_ALL_AFFECTED = "checkIfAllAffected";
     String STARTS_AFFECTED_TESTS = "STARTS:AffectedTests: ";
+    String JDEPS_CACHE = "jdeps-cache";
+    String GRAPH = "graph";
 
     String JAR_EXTENSION = ".jar";
     String CLASS_EXTENSION = ".class";
