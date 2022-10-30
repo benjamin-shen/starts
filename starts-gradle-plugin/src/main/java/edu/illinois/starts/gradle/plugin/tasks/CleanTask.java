@@ -14,7 +14,7 @@ public class CleanTask extends BaseTask {
     public static final String DESCRIPTION = "Removes STARTS plugin artifacts.";
 
     @TaskAction
-    public void cleanArtifacts() throws GradleException {
+    public void cleanArtifacts() {
         File directory = new File(getArtifactsDir());
         if (directory.exists()) {
             FileUtil.delete(directory);

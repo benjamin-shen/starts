@@ -23,7 +23,7 @@ import edu.illinois.starts.helpers.PomUtil;
 import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.util.Logger;
-import edu.illinois.yasgl.DirectedGraph;
+import edu.illinois.starts.util.Result;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.surefire.AbstractSurefireMojo;
@@ -164,37 +164,6 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
         return loader;
     }
 
-    protected class Result {
-        private Map<String, Set<String>> testDeps;
-        private DirectedGraph<String> graph;
-        private Set<String> affectedTests;
-        private Set<String> unreachedDeps;
-
-        public Result(Map<String, Set<String>> testDeps, DirectedGraph<String> graph,
-                      Set<String> affectedTests, Set<String> unreached) {
-            this.testDeps = testDeps;
-            this.graph = graph;
-            this.affectedTests = affectedTests;
-            this.unreachedDeps = unreached;
-        }
-
-        public Map<String, Set<String>> getTestDeps() {
-            return testDeps;
-        }
-
-        public DirectedGraph<String> getGraph() {
-            return graph;
-        }
-
-        public Set<String> getAffectedTests() {
-            return affectedTests;
-        }
-
-        public Set<String> getUnreachedDeps() {
-            return unreachedDeps;
-        }
-    }
-
     public Classpath getSureFireClassPath() throws MojoExecutionException {
         long start = System.currentTimeMillis();
         if (sureFireClassPath == null) {
@@ -223,9 +192,8 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
         // Create the Loadables object early so we can use its helpers
         Loadables loadables = new Loadables(classesToAnalyze, artifactsDir, sfPathString,
                 useThirdParty, filterLib, jdepsCache);
-        // Surefire Classpath object is easier to iterate over without de-constructing
-        // sfPathString (which we use in a number of other places)
-        loadables.setSurefireClasspath(sfClassPath);
+        List<String> paths = sfClassPath != null ? sfClassPath.getClassPath() : null;
+        loadables.setTestClassPaths(paths);
 
         long loadMoreEdges = System.currentTimeMillis();
         Cache cache = new Cache(jdepsCache, m2Repo);
@@ -236,7 +204,7 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
         }
         long loadM2EdgesFromCache = System.currentTimeMillis();
         // 2. Get non-reflection edges from CUT and SDK; use (1) to build graph
-        loadables.create(new ArrayList<>(moreEdges), sfClassPath, computeUnreached);
+        loadables.create(new ArrayList<>(moreEdges), paths, computeUnreached);
 
         Map<String, Set<String>> transitiveClosure = loadables.getTransitiveClosure();
         long createLoadables = System.currentTimeMillis();

@@ -2,29 +2,45 @@ package edu.illinois.starts.gradle.plugin.tasks;
 
 import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.enums.DependencyFormat;
+import edu.illinois.starts.helpers.Cache;
+import edu.illinois.starts.helpers.Loadables;
+import edu.illinois.starts.helpers.RTSUtil;
+import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.util.Logger;
+import edu.illinois.starts.util.Result;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.internal.classloader.DefaultClassLoaderFactory;
+import org.gradle.internal.classpath.ClassPath;
+import org.gradle.internal.classpath.DefaultClassPath;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.*;
 import java.util.logging.Level;
 
 public class BaseTask extends DefaultTask implements StartsConstants {
-    private boolean filterLib = true;
-    private boolean useThirdParty = false;
-    private DependencyFormat depFormat = DependencyFormat.ZLC;
-    private String graphCache;
-    private boolean printGraph = true;
-    private String graphFile = GRAPH;
-    private Level loggingLevel = Level.CONFIG;
+    static final String STAR = "*";
+
+    protected boolean filterLib = true;
+    protected boolean useThirdParty = false;
+    protected DependencyFormat depFormat = DependencyFormat.ZLC;
+    protected String graphCache;
+    protected boolean printGraph = true;
+    protected String graphFile = GRAPH;
+    protected Level loggingLevel = Level.CONFIG;
     /**
      * The directory in which to store STARTS artifacts that are needed between runs.
      */
     @Internal
-    private String artifactsDir;
+    protected String artifactsDir;
+    @Internal
+    protected ClassPath testClassPath;
 
     @Input
     public boolean getFilterLib() {
@@ -114,7 +130,7 @@ public class BaseTask extends DefaultTask implements StartsConstants {
     }
 
     @Option(
-            option = "graphFile",
+            option = "graph",
             description = "Output filename for the graph, if printGraph == true."
     )
     public void setGraphFile(String graphFile) {
@@ -132,5 +148,130 @@ public class BaseTask extends DefaultTask implements StartsConstants {
     )
     public void setLoggingLevel(String loggingLevel) {
         this.loggingLevel = Level.parse(loggingLevel);
+    }
+
+
+    @Internal
+    Set<String> allClasses;
+
+    protected void printResult(Set<String> set, String title) {
+        Writer.writeToLog(set, title, Logger.getGlobal());
+    }
+
+    public void setIncludesExcludes() {
+        long start = System.currentTimeMillis();
+        // TODO not implemented
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(setIncludesExcludes): "
+                + Writer.millsToSeconds(end - start));
+    }
+
+    public List<String> getTestClasses(String methodName) {
+        long start = System.currentTimeMillis();
+        List<File> files = getTestClassPath().getAsFiles();
+        List<String> testClasses = new ArrayList<>();
+        for (File file : files) {
+            testClasses.add(file.getPath());
+        }
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
+                + Writer.millsToSeconds(end - start));
+        return testClasses;
+    }
+
+    public ClassLoader createClassLoader(ClassPath testClassPath) {
+        long start = System.currentTimeMillis();
+        ClassLoader loader = new DefaultClassLoaderFactory().createIsolatedClassLoader("MyRole", testClassPath);
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(createClassLoader): "
+                + Writer.millsToSeconds(end - start));
+        return loader;
+    }
+
+    public ClassPath getTestClassPath() {
+        long start = System.currentTimeMillis();
+        if (testClassPath == null) {
+            Set<File> files = getProject().getConfigurations().getByName("testRuntimeClasspath").getFiles();
+            files.add(getProject().getBuildDir()); // the `build` directory, by default
+            testClassPath = DefaultClassPath.of(files);
+        }
+        Logger.getGlobal().log(Level.FINEST, "TEST-CLASSPATH: " + testClassPath.getAsURLs());
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(getTestClassPath): "
+                + Writer.millsToSeconds(end - start));
+        return testClassPath;
+    }
+
+//    public Result prepareForNextRun(String testClassPathString, ClassPath testClassPath, List<String> classesToAnalyze,
+//                                    Set<String> nonAffected, boolean computeUnreached) {
+//        long start = System.currentTimeMillis();
+//        File jdepsCache = new File(graphCache);
+//
+//        // Create the Loadables object early so we can use its helpers
+//        Loadables loadables = new Loadables(classesToAnalyze, artifactsDir, testClassPathString,
+//                useThirdParty, filterLib, jdepsCache);
+//        List<String> paths = new ArrayList<>();
+//        for (File file: testClassPath.getAsFiles()) {
+//            paths.add(file.getPath());
+//        }
+//        loadables.setTestClassPaths(paths);
+//
+//        long loadMoreEdges = System.currentTimeMillis();
+//        Cache cache = new Cache(jdepsCache, null);
+//        // 1. Load non-reflection edges from third-party libraries in the classpath
+//        List<String> moreEdges = new ArrayList<>();
+//        if (useThirdParty) {
+//            moreEdges = cache.loadM2EdgesFromCache(testClassPathString);
+//        }
+//        long loadM2EdgesFromCache = System.currentTimeMillis();
+//        // 2. Get non-reflection edges from CUT and SDK; use (1) to build graph
+//        loadables.create(new ArrayList<>(moreEdges), paths, computeUnreached);
+//
+//        Map<String, Set<String>> transitiveClosure = loadables.getTransitiveClosure();
+//        long createLoadables = System.currentTimeMillis();
+//
+//        // We don't need to compute affected tests this way with ZLC format.
+//        // In RTSUtil.computeAffectedTests(), we find affected tests by (a) removing nonAffected tests from the set of
+//        // all tests and then (b) adding all tests that reach to * as affected if there has been a change. This is only
+//        // for CLZ which does not encode information about *. ZLC already encodes and reasons about * when it finds
+//        // nonAffected tests.
+//        Set<String> affected = depFormat == DependencyFormat.ZLC ? null
+//                : RTSUtil.computeAffectedTests(new HashSet<>(classesToAnalyze),
+//                nonAffected, transitiveClosure);
+//        long end = System.currentTimeMillis();
+//        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(loadMoreEdges): "
+//                + Writer.millsToSeconds(loadMoreEdges - start));
+//        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(loadM2EdgesFromCache): "
+//                + Writer.millsToSeconds(loadM2EdgesFromCache - loadMoreEdges));
+//        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(createLoadable): "
+//                + Writer.millsToSeconds(createLoadables - loadM2EdgesFromCache));
+//        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(computeAffectedTests): "
+//                + Writer.millsToSeconds(end - createLoadables));
+//        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(prepareForNextRun(TOTAL)): "
+//                + Writer.millsToSeconds(end - start));
+//        return new Result(transitiveClosure, loadables.getGraph(), affected, loadables.getUnreached());
+//    }
+
+    private void scanFiles(File file, Set<String> acc) {
+        if (file.isDirectory()) {
+            for (File child : file.listFiles()) {
+                scanFiles(child, acc);
+            }
+        } else {
+            acc.add(file.getPath());
+        }
+    }
+
+    protected Set<String> getAllClasses() {
+        if (allClasses == null) {
+            allClasses = new HashSet<>();
+            List<File> testClassesDirs = getTestClassPath().getAsFiles();
+            File classesDir = getProject().getBuildDir();
+            for (File file : testClassesDirs) {
+                scanFiles(file, allClasses);
+            }
+            scanFiles(classesDir, allClasses);
+        }
+        return allClasses;
     }
 }
