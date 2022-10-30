@@ -11,6 +11,7 @@ import java.util.Scanner;
  */
 public class HelpTask extends DefaultTask {
     public static final String NAME = "startsHelp";
+    public static final String DESCRIPTION = "Displays help message for STARTS plugin.";
 
     @TaskAction
     void printHelp() {

@@ -32,20 +32,20 @@ public class Loadables implements StartsConstants {
     List<String> extraEdges;
     private List<String> classesToAnalyze;
     private File cache;
-    private String sfPathString;
+    private String testClassPathString;
     private DirectedGraph<String> graph;
     private Map<String, Set<String>> transitiveClosure;
     private Set<String> unreached;
     private boolean filterLib;
     private boolean useThirdParty;
-    private Classpath surefireClasspath;
+    private List<String> testClassPaths;
     private String artifactsDir;
 
-    public Loadables(List<String> classesToAnalyze, String artifactsDir, String sfPathString,
+    public Loadables(List<String> classesToAnalyze, String artifactsDir, String testClassPathString,
                      boolean useThirdParty, boolean filterLib, File cache) {
         this.classesToAnalyze = classesToAnalyze;
         this.artifactsDir = artifactsDir;
-        this.sfPathString = sfPathString;
+        this.testClassPathString = testClassPathString;
         this.filterLib = filterLib;
         this.cache = cache;
         this.useThirdParty = useThirdParty;
@@ -67,8 +67,8 @@ public class Loadables implements StartsConstants {
         // There is a cache of all third party libraries, remove third-party jars from jdeps classpath
         // ASSUMPTION: local dependencies (modules in the same mvn project) are directories, not jars
         List<String> localPaths = new ArrayList<>();
-        if (surefireClasspath != null) {
-            for (String path : surefireClasspath.getClassPath()) {
+        if (testClassPaths != null) {
+            for (String path : testClassPaths) {
                 if (!path.endsWith(JAR_EXTENSION) && new File(path).exists()) {
                     localPaths.add(path);
                 }
@@ -77,13 +77,13 @@ public class Loadables implements StartsConstants {
         return localPaths;
     }
 
-    public Loadables create(List<String> moreEdges, Classpath sfClassPath,
+    public Loadables create(List<String> moreEdges, List<String> testClassPath,
                             boolean computeUnreached) {
-        setSurefireClasspath(sfClassPath);
+        setTestClassPaths(testClassPath);
         LOGGER.log(Level.FINEST, "More: " + moreEdges.size());
         extraEdges = moreEdges;
         long startTime = System.currentTimeMillis();
-        deps = getDepMap(sfPathString, classesToAnalyze);
+        deps = getDepMap(testClassPathString, classesToAnalyze);
         long jdepsTime = System.currentTimeMillis();
         graph = makeGraph(deps, extraEdges);
         long graphBuildingTime = System.currentTimeMillis();
@@ -218,7 +218,7 @@ public class Loadables implements StartsConstants {
         return tcPerTest;
     }
 
-    public void setSurefireClasspath(Classpath surefireClasspath) {
-        this.surefireClasspath = surefireClasspath;
+    public void setTestClassPaths(List<String> testClassPaths) {
+        this.testClassPaths = testClassPaths;
     }
 }

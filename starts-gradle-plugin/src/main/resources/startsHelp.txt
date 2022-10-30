@@ -1,6 +1,4 @@
 A tool for STAtic Regression Test Selection.
 
-This plugin has 1 task:
-
-startsHelp
-    Print this help message
+To view all STARTS tasks, run `gradlew tasks`.
+To see more detail about a task, run `gradlew help --task <task>`.
