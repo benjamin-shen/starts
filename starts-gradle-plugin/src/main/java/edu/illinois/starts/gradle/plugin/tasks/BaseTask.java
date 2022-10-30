@@ -2,16 +2,10 @@ package edu.illinois.starts.gradle.plugin.tasks;
 
 import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.enums.DependencyFormat;
-import edu.illinois.starts.helpers.Cache;
-import edu.illinois.starts.helpers.Loadables;
-import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.util.Logger;
-import edu.illinois.starts.util.Result;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.options.Option;
@@ -21,7 +15,10 @@ import org.gradle.internal.classpath.DefaultClassPath;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 
 public class BaseTask extends DefaultTask implements StartsConstants {
@@ -41,6 +38,8 @@ public class BaseTask extends DefaultTask implements StartsConstants {
     protected String artifactsDir;
     @Internal
     protected ClassPath testClassPath;
+    @Internal
+    Set<String> allClasses;
 
     @Input
     public boolean getFilterLib() {
@@ -149,10 +148,6 @@ public class BaseTask extends DefaultTask implements StartsConstants {
     public void setLoggingLevel(String loggingLevel) {
         this.loggingLevel = Level.parse(loggingLevel);
     }
-
-
-    @Internal
-    Set<String> allClasses;
 
     protected void printResult(Set<String> set, String title) {
         Writer.writeToLog(set, title, Logger.getGlobal());
