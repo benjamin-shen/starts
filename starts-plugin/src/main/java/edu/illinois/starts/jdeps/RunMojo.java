@@ -32,7 +32,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  */
 @Mojo(name = "run", requiresDependencyResolution = ResolutionScope.TEST)
 public class RunMojo extends DiffMojo implements StartsConstants {
-    private static final String TARGET = "target";
     /**
      * Set this to "false" to prevent checksums from being persisted to disk. This
      * is useful for "dry runs" where one may want to see the non-affected tests that
@@ -67,6 +66,18 @@ public class RunMojo extends DiffMojo implements StartsConstants {
      */
     @Parameter(property = "writeChangedClasses", defaultValue = "false")
     protected boolean writeChangedClasses;
+
+    /**
+     * Path to classes directory.
+     */
+    @Parameter(property = "classPath", defaultValue = "target${file.separator}classes")
+    protected String classPath;
+
+    /**
+     * Path to test classes directory.
+     */
+    @Parameter(property = "testClassPath", defaultValue = "target${file.separator}test-classes")
+    protected String testClassPath;
 
     protected Set<String> nonAffectedTests;
     protected Set<String> changedClasses;
@@ -198,8 +209,8 @@ public class RunMojo extends DiffMojo implements StartsConstants {
     private List<String> getCleanClassPath(String cp) {
         List<String> cpPaths = new ArrayList<>();
         String[] paths = cp.split(File.pathSeparator);
-        String classes = File.separator + TARGET +  File.separator + CLASSES;
-        String testClasses = File.separator + TARGET + File.separator + TEST_CLASSES;
+        String classes = File.separator + classPath;
+        String testClasses = File.separator + testClassPath;
         for (int i = 0; i < paths.length; i++) {
             // TODO: should we also exclude SNAPSHOTS from same project?
             if (paths[i].contains(classes) || paths[i].contains(testClasses)) {
