@@ -19,5 +19,8 @@ class StartsPluginTest {
 
         // Verify the result
         assertNotNull(project.getTasks().findByName("startsHelp"));
+        assertNotNull(project.getTasks().findByName("startsClean"));
+        assertNotNull(project.getTasks().findByName("startsDiff"));
+        assertNotNull(project.getTasks().findByName("startsRun"));
     }
 }
