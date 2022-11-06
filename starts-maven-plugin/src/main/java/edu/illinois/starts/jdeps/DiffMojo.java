@@ -4,13 +4,13 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
 import edu.illinois.starts.helpers.EkstaziHelper;
@@ -34,7 +34,7 @@ import org.apache.maven.surefire.booter.Classpath;
  */
 @Mojo(name = "diff", requiresDirectInvocation = true, requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
-public class DiffMojo extends BaseMojo implements StartsConstants {
+public class DiffMojo extends BaseMojo {
     /**
      * Set this to "false" to disable smart hashing, i.e., to *not* strip
      * Bytecode files of debug info prior to computing checksums. See the "Smart
@@ -83,12 +83,11 @@ public class DiffMojo extends BaseMojo implements StartsConstants {
         long start = System.currentTimeMillis();
         Pair<Set<String>, Set<String>> data = null;
         if (depFormat == DependencyFormat.ZLC) {
-            ZLCHelper zlcHelper = new ZLCHelper();
-            data = zlcHelper.getChangedData(getArtifactsDir(), cleanBytes);
+            data = ZLCHelper.getChangedData(getArtifactsDir(), cleanBytes);
         } else if (depFormat == DependencyFormat.CLZ) {
             data = EkstaziHelper.getNonAffectedTests(getArtifactsDir());
         }
-        Set<String> changed = data == null ? new HashSet<String>() : data.getValue();
+        Set<String> changed = data == null ? new HashSet<>() : data.getValue();
         if (writeChanged || Logger.getGlobal().getLoggingLevel().intValue() <= Level.FINEST.intValue()) {
             Writer.writeToFile(changed, CHANGED_CLASSES, getArtifactsDir());
         }
@@ -115,15 +114,18 @@ public class DiffMojo extends BaseMojo implements StartsConstants {
             graph = result.getGraph();
             Set<String> unreached = computeUnreached ? result.getUnreachedDeps() : new HashSet<String>();
             if (depFormat == DependencyFormat.ZLC) {
-                ZLCHelper zlcHelper = new ZLCHelper();
-                zlcHelper.updateZLCFile(testDeps, loader, getArtifactsDir(), unreached, useThirdParty, zlcFormat);
+                ZLCHelper.updateZLCFile(testDeps, loader, getArtifactsDir(), unreached, useThirdParty, zlcFormat);
             } else if (depFormat == DependencyFormat.CLZ) {
                 // The next line is not needed with ZLC because '*' is explicitly tracked in ZLC
                 affectedTests = result.getAffectedTests();
                 if (affectedTests == null) {
                     throw new MojoExecutionException("Affected tests should not be null with CLZ format!");
                 }
-                RTSUtil.computeAndSaveNewCheckSums(getArtifactsDir(), affectedTests, testDeps, loader);
+                try {
+                    RTSUtil.computeAndSaveNewCheckSums(getArtifactsDir(), affectedTests, testDeps, loader);
+                } catch (IOException ioe) {
+                    throw new MojoExecutionException(ioe.getMessage());
+                }
             }
         }
         save(getArtifactsDir(), affectedTests, allTests, sfPathString, graph);
