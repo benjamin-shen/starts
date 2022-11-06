@@ -22,8 +22,6 @@ import java.util.Set;
 import java.util.logging.Level;
 
 public class BaseTask extends DefaultTask implements StartsConstants {
-    static final String STAR = "*";
-
     protected boolean filterLib = true;
     protected boolean useThirdParty = false;
     protected DependencyFormat depFormat = DependencyFormat.ZLC;

@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
 import edu.illinois.starts.helpers.EkstaziHelper;
@@ -34,7 +33,7 @@ import org.apache.maven.surefire.booter.Classpath;
  */
 @Mojo(name = "diff", requiresDirectInvocation = true, requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
-public class DiffMojo extends BaseMojo implements StartsConstants {
+public class DiffMojo extends BaseMojo {
     /**
      * Set this to "false" to disable smart hashing, i.e., to *not* strip
      * Bytecode files of debug info prior to computing checksums. See the "Smart
