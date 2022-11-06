@@ -4,6 +4,7 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -82,12 +83,11 @@ public class DiffMojo extends BaseMojo {
         long start = System.currentTimeMillis();
         Pair<Set<String>, Set<String>> data = null;
         if (depFormat == DependencyFormat.ZLC) {
-            ZLCHelper zlcHelper = new ZLCHelper();
-            data = zlcHelper.getChangedData(getArtifactsDir(), cleanBytes);
+            data = ZLCHelper.getChangedData(getArtifactsDir(), cleanBytes);
         } else if (depFormat == DependencyFormat.CLZ) {
             data = EkstaziHelper.getNonAffectedTests(getArtifactsDir());
         }
-        Set<String> changed = data == null ? new HashSet<String>() : data.getValue();
+        Set<String> changed = data == null ? new HashSet<>() : data.getValue();
         if (writeChanged || Logger.getGlobal().getLoggingLevel().intValue() <= Level.FINEST.intValue()) {
             Writer.writeToFile(changed, CHANGED_CLASSES, getArtifactsDir());
         }
@@ -114,15 +114,18 @@ public class DiffMojo extends BaseMojo {
             graph = result.getGraph();
             Set<String> unreached = computeUnreached ? result.getUnreachedDeps() : new HashSet<String>();
             if (depFormat == DependencyFormat.ZLC) {
-                ZLCHelper zlcHelper = new ZLCHelper();
-                zlcHelper.updateZLCFile(testDeps, loader, getArtifactsDir(), unreached, useThirdParty, zlcFormat);
+                ZLCHelper.updateZLCFile(testDeps, loader, getArtifactsDir(), unreached, useThirdParty, zlcFormat);
             } else if (depFormat == DependencyFormat.CLZ) {
                 // The next line is not needed with ZLC because '*' is explicitly tracked in ZLC
                 affectedTests = result.getAffectedTests();
                 if (affectedTests == null) {
                     throw new MojoExecutionException("Affected tests should not be null with CLZ format!");
                 }
-                RTSUtil.computeAndSaveNewCheckSums(getArtifactsDir(), affectedTests, testDeps, loader);
+                try {
+                    RTSUtil.computeAndSaveNewCheckSums(getArtifactsDir(), affectedTests, testDeps, loader);
+                } catch (IOException ioe) {
+                    throw new MojoExecutionException(ioe.getMessage());
+                }
             }
         }
         save(getArtifactsDir(), affectedTests, allTests, sfPathString, graph);

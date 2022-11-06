@@ -44,7 +44,7 @@ public class RTSUtil implements StartsConstants {
     public static void computeAndSaveNewCheckSums(String artifactsDir,
                                                   Set<String> affectedTests,
                                                   Map<String, Set<String>> testDeps,
-                                                  ClassLoader loader) throws MojoExecutionException {
+                                                  ClassLoader loader) throws IOException {
         long start;
         long end;
         start = System.currentTimeMillis();
@@ -53,11 +53,7 @@ public class RTSUtil implements StartsConstants {
         LOGGER.log(Level.FINEST, "[TIME]UPDATING CHECKSUMS: " + (end - start) + MILLISECOND);
         start = System.currentTimeMillis();
         ChecksumUtil.saveCheckSums(newCheckSums, artifactsDir);
-        try {
-            new File(artifactsDir, EkstaziHelper.notFirstRunMarker).createNewFile();
-        } catch (IOException ioe) {
-            throw new MojoExecutionException(ioe.getMessage());
-        }
+        new File(artifactsDir, EkstaziHelper.notFirstRunMarker).createNewFile();
         end = System.currentTimeMillis();
         LOGGER.log(Level.FINEST, "[TIME]RE-SAVING CHECKSUMS: " + (end - start) + MILLISECOND);
     }
