@@ -113,7 +113,7 @@ public class DiffTask extends BaseTask {
         return data;
     }
 
-    protected void updateForNextRun() throws GradleException {
+    protected void updateForNextRun() {
         long start = System.currentTimeMillis();
         String testClassPathString = getTestClassPath().getAsURLs().toString();
         setIncludesExcludes();

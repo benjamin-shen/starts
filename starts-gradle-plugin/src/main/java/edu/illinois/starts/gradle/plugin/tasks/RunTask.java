@@ -1,10 +1,8 @@
 package edu.illinois.starts.gradle.plugin.tasks;
 
 import edu.illinois.starts.helpers.Writer;
-import edu.illinois.starts.maven.AgentLoader;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
-import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
@@ -19,7 +17,7 @@ public class RunTask extends DiffTask {
     public static final String NAME = "startsRun";
     public static final String DESCRIPTION = "Prepares for test runs by writing non-affected tests in the excludesFile.";
 
-    protected boolean updateRunChecksums = false;
+    protected boolean updateRunChecksums = true;
     protected boolean retestAll = false;
     protected boolean writeNonAffected = false;
     protected boolean writeChangedClasses = false;
@@ -31,12 +29,12 @@ public class RunTask extends DiffTask {
 
     @Option(
             option = "updateRunChecksums",
-            description = "Set this to \"true\" to update test dependencies on disk. The default value of \"false\" " +
+            description = "Set this to \"false\" to prevent checksums from being persisted to disk. This " +
                     "is useful for \"dry runs\" where one may want to see the non-affected tests that " +
                     "STARTS writes to the Surefire excludesFile, without updating test dependencies."
     )
     public void setUpdateRunChecksums(String updateRunChecksums) {
-        this.updateRunChecksums = updateRunChecksums.equals(TRUE);
+        this.updateRunChecksums = !updateRunChecksums.equals(FALSE);
     }
 
     @Input
