@@ -86,6 +86,8 @@ public class RunTask extends DiffTask {
         this.writeChangedClasses = writeChangedClasses.equals(TRUE);
     }
 
+    protected List<String> excludePaths = new ArrayList<>();
+
     @TaskAction
     public void execute() {
         Logger logger = Logger.getGlobal();
@@ -123,11 +125,10 @@ public class RunTask extends DiffTask {
         if (retestAll) {
             // Force retestAll but compute changes and affected tests
             setChangedAndNonaffected();
-            dynamicallyUpdateExcludes(new ArrayList<>());
         } else {
             setChangedAndNonaffected();
-            List<String> excludePaths = Writer.fqnsToExcludePath(nonAffectedTests);
-            dynamicallyUpdateExcludes(excludePaths);
+            excludePaths = Writer.fqnsToExcludePath(nonAffectedTests);
+            System.setProperty(STARTS_EXCLUDE_PROPERTY, Arrays.toString(excludePaths.toArray(new String[0])));
         }
         long startUpdateTime = System.currentTimeMillis();
         if (updateRunChecksums) {
@@ -136,16 +137,6 @@ public class RunTask extends DiffTask {
         long endUpdateTime = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, PROFILE_STARTS_MOJO_UPDATE_TIME
                 + Writer.millsToSeconds(endUpdateTime - startUpdateTime));
-    }
-
-    private void dynamicallyUpdateExcludes(List<String> excludePaths) {
-        // TODO not implemented
-        if (AgentLoader.loadDynamicAgent()) {
-            Logger.getGlobal().log(Level.FINEST, "AGENT LOADED!!!");
-            System.setProperty(STARTS_EXCLUDE_PROPERTY, Arrays.toString(excludePaths.toArray(new String[0])));
-        } else {
-            throw new GradleException("I COULD NOT ATTACH THE AGENT");
-        }
     }
 
     protected void setChangedAndNonaffected() {
