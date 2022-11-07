@@ -6,6 +6,7 @@ package edu.illinois.starts.gradle.plugin;
 import edu.illinois.starts.gradle.plugin.tasks.CleanTask;
 import edu.illinois.starts.gradle.plugin.tasks.DiffTask;
 import edu.illinois.starts.gradle.plugin.tasks.HelpTask;
+import edu.illinois.starts.gradle.plugin.tasks.RunTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -29,6 +30,10 @@ public class StartsPlugin implements Plugin<Project> {
         diffTask.setDescription(DiffTask.DESCRIPTION);
         diffTask.setGroup(STARTS_GROUP);
         diffTask.dependsOn(project.getTasksByName("testClasses", false));
+
+        Task runTask = project.getTasks().create(RunTask.NAME, RunTask.class);
+        diffTask.setDescription(RunTask.DESCRIPTION);
+        diffTask.setGroup(STARTS_GROUP);
 
     }
 }

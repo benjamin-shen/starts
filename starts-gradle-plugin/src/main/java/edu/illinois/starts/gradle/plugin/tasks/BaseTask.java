@@ -152,6 +152,9 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         this.loggingLevel = Level.parse(loggingLevel);
     }
 
+    protected Set<String> nonAffectedTests = new HashSet<>();
+    protected Set<String> changedClasses = new HashSet<>();
+
     protected void printResult(Set<String> set, String title) {
         Writer.writeToLog(set, title, Logger.getGlobal());
     }
@@ -201,7 +204,7 @@ public class BaseTask extends DefaultTask implements StartsConstants {
     }
 
     public Result prepareForNextRun(String testClassPathString, ClassPath testClassPath, List<String> classesToAnalyze,
-                                    Set<String> nonAffected, boolean computeUnreached) {
+                                    boolean computeUnreached) {
         long start = System.currentTimeMillis();
         File jdepsCache = new File(graphCache);
 
@@ -235,7 +238,7 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         // nonAffected tests.
         Set<String> affected = depFormat == DependencyFormat.ZLC ? null
                 : RTSUtil.computeAffectedTests(new HashSet<>(classesToAnalyze),
-                nonAffected, transitiveClosure);
+                nonAffectedTests, transitiveClosure);
         long end = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(loadMoreEdges): "
                 + Writer.millsToSeconds(loadMoreEdges - start));

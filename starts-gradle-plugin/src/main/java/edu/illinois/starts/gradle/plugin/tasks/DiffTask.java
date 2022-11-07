@@ -14,7 +14,6 @@ import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
-import org.gradle.internal.classpath.ClassPath;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -83,20 +82,18 @@ public class DiffTask extends BaseTask {
     public void execute() {
         Logger.getGlobal().setLoggingLevel(loggingLevel);
 
-        Set<String> changed = new HashSet<>();
-        Set<String> nonAffected = new HashSet<>();
         Pair<Set<String>, Set<String>> data = computeChangeData(false);
         String extraText = EMPTY;
         if (data != null) {
-            nonAffected = data.getKey();
-            changed = data.getValue();
+            nonAffectedTests = data.getKey();
+            changedClasses = data.getValue();
         } else {
             extraText = " (no RTS artifacts; likely the first run)";
         }
-        printResult(changed, "ChangedClasses" + extraText);
-//        if (updateDiffChecksums) {
-//            updateForNextRun(nonAffected);
-//        }
+        printResult(changedClasses, "ChangedClasses" + extraText);
+        if (updateDiffChecksums) {
+            updateForNextRun();
+        }
     }
 
     protected Pair<Set<String>, Set<String>> computeChangeData(boolean writeChanged) {
@@ -116,20 +113,19 @@ public class DiffTask extends BaseTask {
         return data;
     }
 
-    protected void updateForNextRun(Set<String> nonAffected) throws GradleException {
+    protected void updateForNextRun() throws GradleException {
         long start = System.currentTimeMillis();
-        ClassPath testClassPath = getTestClassPath();
-        String testClassPathString = testClassPath.getAsURLs().toString();
+        String testClassPathString = getTestClassPath().getAsURLs().toString();
         setIncludesExcludes();
         List<String> allTests = getTestClasses("updateForNextRun");
         Set<String> affectedTests = new HashSet<>(allTests);
-        affectedTests.removeAll(nonAffected);
+        affectedTests.removeAll(nonAffectedTests);
         DirectedGraph<String> graph = null;
         if (!affectedTests.isEmpty()) {
             ClassLoader loader = createClassLoader(testClassPath);
             //TODO: set this boolean to true only for static reflectionAnalyses with * (border, string, naive)?
             boolean computeUnreached = true;
-            Result result = prepareForNextRun(testClassPathString, testClassPath, allTests, nonAffected, computeUnreached);
+            Result result = prepareForNextRun(testClassPathString, testClassPath, allTests, computeUnreached);
             Map<String, Set<String>> testDeps = result.getTestDeps();
             graph = result.getGraph();
             Set<String> unreached = computeUnreached ? result.getUnreachedDeps() : new HashSet<String>();

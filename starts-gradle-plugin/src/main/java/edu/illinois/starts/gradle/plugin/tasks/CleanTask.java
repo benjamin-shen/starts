@@ -1,7 +1,6 @@
 package edu.illinois.starts.gradle.plugin.tasks;
 
 import edu.illinois.starts.helpers.FileUtil;
-import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
