@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.maven.AgentLoader;
 import edu.illinois.starts.util.Logger;
@@ -31,7 +30,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  * Prepares for test runs by writing non-affected tests in the excludesFile.
  */
 @Mojo(name = "run", requiresDependencyResolution = ResolutionScope.TEST)
-public class RunMojo extends DiffMojo implements StartsConstants {
+public class RunMojo extends DiffMojo {
     private static final String TARGET = "target";
     /**
      * Set this to "false" to prevent checksums from being persisted to disk. This
@@ -58,14 +57,14 @@ public class RunMojo extends DiffMojo implements StartsConstants {
      * updating test dependencies in offline mode by not running computeChangeData() twice.
      * Note: Running with "-DstartsLogging=FINEST" also saves nonAffectedTests to a file on disk.
      */
-    @Parameter(property = "writeNonAffected", defaultValue = "false")
+    @Parameter(property = "writeNonAffected", defaultValue = FALSE)
     protected boolean writeNonAffected;
 
     /**
      * Set this to "true" to save changedClasses to a file on disk.
      * Note: Running with "-DstartsLogging=FINEST" also saves changedClasses to a file on disk.
      */
-    @Parameter(property = "writeChangedClasses", defaultValue = "false")
+    @Parameter(property = "writeChangedClasses", defaultValue = FALSE)
     protected boolean writeChangedClasses;
 
     protected Set<String> nonAffectedTests;
