@@ -115,7 +115,7 @@ public class DiffTask extends BaseTask {
 
     protected void updateForNextRun() {
         long start = System.currentTimeMillis();
-        String testClassPathString = getTestClassPath().getAsURLs().toString();
+        String testClassPathString = getTestClassPath().toString();
         setIncludesExcludes();
         List<String> allTests = getTestClasses("updateForNextRun");
         Set<String> affectedTests = new HashSet<>(allTests);

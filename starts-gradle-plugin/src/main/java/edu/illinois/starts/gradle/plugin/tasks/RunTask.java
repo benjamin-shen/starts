@@ -109,7 +109,7 @@ public class RunTask extends DiffTask {
 
     protected void run() {
         // TODO not implemented
-//        String cpString = getTestClassPath().getAsURLs().toString(); // TODO refactor
+//        String cpString = getTestClassPath().toString();
 //        List<String> sfPathElements = getCleanClassPath(cpString);
 //        if (!isSameClassPath(sfPathElements) || !hasSameJarChecksum(sfPathElements)) {
 //            // Force retestAll because classpath changed since last run
