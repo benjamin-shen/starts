@@ -100,10 +100,8 @@ public class DiffMojo extends BaseMojo {
         long start = System.currentTimeMillis();
         Classpath sfClassPath = getSureFireClassPath();
         String sfPathString = Writer.pathToString(sfClassPath.getClassPath());
-        System.out.println(sfPathString);
         setIncludesExcludes();
         List<String> allTests = getTestClasses("updateForNextRun");
-        System.out.println(allTests);
         Set<String> affectedTests = new HashSet<>(allTests);
         affectedTests.removeAll(nonAffected);
         DirectedGraph<String> graph = null;
