@@ -3,13 +3,18 @@
  */
 package edu.illinois.starts.gradle.plugin;
 
-import edu.illinois.starts.gradle.plugin.tasks.CleanTask;
-import edu.illinois.starts.gradle.plugin.tasks.DiffTask;
-import edu.illinois.starts.gradle.plugin.tasks.HelpTask;
-import edu.illinois.starts.gradle.plugin.tasks.RunTask;
+import edu.illinois.starts.gradle.plugin.tasks.*;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.testing.Test;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static edu.illinois.starts.constants.StartsConstants.STARTS_EXCLUDE_PROPERTY;
 
 /**
  * STARTS Gradle Plugin
@@ -29,11 +34,16 @@ public class StartsPlugin implements Plugin<Project> {
         Task diffTask = project.getTasks().create(DiffTask.NAME, DiffTask.class);
         diffTask.setDescription(DiffTask.DESCRIPTION);
         diffTask.setGroup(STARTS_GROUP);
-        diffTask.dependsOn(project.getTasksByName("testClasses", false));
+        diffTask.dependsOn(project.getTasksByName("testClasses", true));
 
         Task runTask = project.getTasks().create(RunTask.NAME, RunTask.class);
         runTask.setDescription(RunTask.DESCRIPTION);
         runTask.setGroup(STARTS_GROUP);
+        runTask.dependsOn(project.getTasksByName("testClasses", true));
 
+        Task startsTask = project.getTasks().create(StartsTask.NAME, StartsTask.class);
+        startsTask.setDescription(StartsTask.DESCRIPTION);
+        startsTask.setGroup(STARTS_GROUP);
+        startsTask.dependsOn(runTask, project.getTasksByName("test", true));
     }
 }
