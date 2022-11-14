@@ -32,8 +32,8 @@ public class StartsPlugin implements Plugin<Project> {
         diffTask.dependsOn(project.getTasksByName("testClasses", false));
 
         Task runTask = project.getTasks().create(RunTask.NAME, RunTask.class);
-        diffTask.setDescription(RunTask.DESCRIPTION);
-        diffTask.setGroup(STARTS_GROUP);
+        runTask.setDescription(RunTask.DESCRIPTION);
+        runTask.setGroup(STARTS_GROUP);
 
     }
 }

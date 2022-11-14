@@ -233,8 +233,8 @@
           <configLocation>checkstyle.xml</configLocation>
           <encoding>UTF-8</encoding>
           <consoleOutput>true</consoleOutput>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
+          <failsOnError>false</failsOnError>
+          <failOnViolation>false</failOnViolation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <linkXRef>false</linkXRef>
           <excludes>com/sun/**/*,org/apache/maven/**/*,edu/illinois/starts/asm/**/*</excludes>
