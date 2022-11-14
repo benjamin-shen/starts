@@ -170,6 +170,7 @@ public class BaseTask extends DefaultTask implements StartsConstants {
     public List<String> getTestClasses(String methodName) {
         List<String> a = new ArrayList<>();
         a.add("first.FirstTest");
+        a.add("first.SecondTest");
         return a;
         // TODO fix this function
 //        long start = System.currentTimeMillis();

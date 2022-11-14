@@ -3,9 +3,12 @@ package edu.illinois.starts.gradle.plugin.tasks;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
+import org.gradle.api.Task;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.api.tasks.testing.Test;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -123,10 +126,11 @@ public class RunTask extends DiffTask {
         if (retestAll) {
             // Force retestAll but compute changes and affected tests
             setChangedAndNonaffected();
+            dynamicallyUpdateExcludes(null);
         } else {
             setChangedAndNonaffected();
             excludePaths = Writer.fqnsToExcludePath(nonAffectedTests);
-            System.setProperty(STARTS_EXCLUDE_PROPERTY, Arrays.toString(excludePaths.toArray(new String[0])));
+            dynamicallyUpdateExcludes(excludePaths);
         }
         long startUpdateTime = System.currentTimeMillis();
         if (updateRunChecksums) {
@@ -135,6 +139,20 @@ public class RunTask extends DiffTask {
         long endUpdateTime = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, PROFILE_STARTS_MOJO_UPDATE_TIME
                 + Writer.millsToSeconds(endUpdateTime - startUpdateTime));
+    }
+
+    private void dynamicallyUpdateExcludes(List<String> excludePaths) {
+        if (excludePaths == null) {
+            System.clearProperty(STARTS_EXCLUDE_PROPERTY);
+        } else {
+            System.setProperty(STARTS_EXCLUDE_PROPERTY, Arrays.toString(excludePaths.toArray(new String[0])));
+        }
+        TaskContainer allTasks = getProject().getTasks();
+        for (Task task : allTasks) {
+            if (task instanceof Test) {
+                ((Test) task).setExcludes(excludePaths);
+            }
+        }
     }
 
     protected void setChangedAndNonaffected() {
