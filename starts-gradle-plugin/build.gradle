@@ -7,9 +7,9 @@
  */
 
 plugins {
+    id 'com.gradle.plugin-publish' version '1.0.0-rc-1'
     id 'java-gradle-plugin'
     id 'maven-publish'
-    id 'com.gradle.plugin-publish' version '1.0.0-rc-1'
 }
 
 project.description = 'STARTS Gradle Plugin'
@@ -25,6 +25,7 @@ dependencies {
     implementation gradleApi()
     implementation 'edu.illinois:yasgl:1.2'
     implementation 'edu.illinois:starts-core:' + project.version
+    implementation 'edu.illinois:starts-plugin-util:' + project.version
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 }
 

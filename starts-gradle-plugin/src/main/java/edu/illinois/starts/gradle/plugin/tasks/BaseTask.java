@@ -6,6 +6,7 @@ import edu.illinois.starts.helpers.Cache;
 import edu.illinois.starts.helpers.Loadables;
 import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.Util;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Result;
 import org.gradle.api.DefaultTask;
@@ -27,6 +28,8 @@ import java.util.Set;
 import java.util.logging.Level;
 
 public class BaseTask extends DefaultTask implements StartsConstants {
+    private File classDir;
+    private File testClassDir;
     protected boolean filterLib = true;
     protected boolean useThirdParty = false;
     protected DependencyFormat depFormat = DependencyFormat.ZLC;
@@ -159,33 +162,28 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         Writer.writeToLog(set, title, Logger.getGlobal());
     }
 
-    public void setIncludesExcludes() {
-        long start = System.currentTimeMillis();
-        // TODO not implemented
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(setIncludesExcludes): "
-                + Writer.millsToSeconds(end - start));
+    private File getClassDir () {
+        if (classDir == null) {
+            classDir = Paths.get(getProject().getBuildDir().toString(), "classes", "java").toFile();;
+        }
+        return classDir;
     }
 
+    private File getTestClassDir() {
+        if (testClassDir == null) {
+            testClassDir = Paths.get(getClassDir().toString(), "test").toFile();
+        }
+        return testClassDir;
+    }
+
+
     public List<String> getTestClasses(String methodName) {
-        List<String> a = new ArrayList<>();
-        a.add("first.FirstTest");
-        a.add("first.SecondTest");
-        return a;
-        // TODO fix this function
-//        long start = System.currentTimeMillis();
-//        Set<String> testClasses = new HashSet<>();
-//        for (File dir : getTestClassesDirs()) {
-//            Set<String> classes = new HashSet<>();
-//            scanFiles(dir, classes);
-//            for (String fileName : classes) {
-//                testClasses.add(fileName);
-//            }
-//        }
-//        long end = System.currentTimeMillis();
-//        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
-//                + Writer.millsToSeconds(end - start));
-//        return new ArrayList<>(testClasses);
+        long start = System.currentTimeMillis();
+        List<String> testClasses = Util.getTestClasses(getTestClassDir());
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
+                + Writer.millsToSeconds(end - start));
+        return testClasses;
     }
 
     public ClassLoader createClassLoader(ClassPath testClassPath) {
@@ -201,8 +199,11 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         long start = System.currentTimeMillis();
         if (testClassPath == null) {
             Set<File> files = getProject().getConfigurations().getByName("testRuntimeClasspath").getFiles();
-            files.add(new File(getProject().getBuildDir() + "/classes/java/main")); // TODO fix
-            files.add(new File(getProject().getBuildDir() + "/classes/java/test")); // TODO un-hardcode
+            if (getClassDir().isDirectory()) {
+                for (File child : getClassDir().listFiles()) {
+                    files.add(child);
+                }
+            }
             testClassPath = DefaultClassPath.of(files);
         }
         Logger.getGlobal().log(Level.FINEST, "TEST-CLASSPATH: " + testClassPath);

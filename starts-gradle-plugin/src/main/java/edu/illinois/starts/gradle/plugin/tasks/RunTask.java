@@ -95,7 +95,6 @@ public class RunTask extends DiffTask {
         logger.setLoggingLevel(loggingLevel);
 
         long start = System.currentTimeMillis();
-        setIncludesExcludes();
         run();
         Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
         if (writeNonAffected || logger.getLoggingLevel().intValue() <= Level.FINEST.intValue()) {

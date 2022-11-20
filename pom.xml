@@ -262,5 +262,6 @@
   <modules>
     <module>starts-core</module>
     <module>starts-maven-plugin</module>
+    <module>starts-plugin-util</module>
   </modules>
 </project>
