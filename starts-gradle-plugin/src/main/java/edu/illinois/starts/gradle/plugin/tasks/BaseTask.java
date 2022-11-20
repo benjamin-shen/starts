@@ -28,7 +28,9 @@ import java.util.Set;
 import java.util.logging.Level;
 
 public class BaseTask extends DefaultTask implements StartsConstants {
+    @Internal
     private File classDir;
+    @Internal
     private File testClassDir;
     protected boolean filterLib = true;
     protected boolean useThirdParty = false;
@@ -162,14 +164,14 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         Writer.writeToLog(set, title, Logger.getGlobal());
     }
 
-    private File getClassDir () {
+    protected File getClassDir () {
         if (classDir == null) {
             classDir = Paths.get(getProject().getBuildDir().toString(), "classes", "java").toFile();;
         }
         return classDir;
     }
 
-    private File getTestClassDir() {
+    protected File getTestClassDir() {
         if (testClassDir == null) {
             testClassDir = Paths.get(getClassDir().toString(), "test").toFile();
         }

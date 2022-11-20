@@ -3,6 +3,7 @@ package edu.illinois.starts.gradle.plugin.tasks;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
+import org.gradle.api.GradleException;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
@@ -10,6 +11,10 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.api.tasks.testing.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -24,6 +29,7 @@ public class RunTask extends DiffTask {
     protected boolean retestAll = false;
     protected boolean writeNonAffected = false;
     protected boolean writeChangedClasses = false;
+    protected List<Pair> jarCheckSums = null;
 
     @Input
     public boolean getUpdateRunChecksums() {
@@ -110,19 +116,17 @@ public class RunTask extends DiffTask {
     }
 
     protected void run() {
-        // TODO not implemented
-//        String cpString = getTestClassPath().toString();
-//        List<String> sfPathElements = getCleanClassPath(cpString);
-//        if (!isSameClassPath(sfPathElements) || !hasSameJarChecksum(sfPathElements)) {
-//            // Force retestAll because classpath changed since last run
-//            // don't compute changed and non-affected classes
-//            dynamicallyUpdateExcludes(new ArrayList<>());
-//            // Make nonAffected empty so dependencies can be updated
-//            nonAffectedTests = new HashSet<>();
-//            Writer.writeClassPath(cpString, artifactsDir);
-//            Writer.writeJarChecksums(sfPathElements, artifactsDir, jarCheckSums);
-//        } else
-        if (retestAll) {
+        String cpString = getTestClassPath().toString();
+        List<String> testDependencyElements = getCleanClassPath(cpString);
+        if (!isSameClassPath(testDependencyElements) || !hasSameJarChecksum(testDependencyElements)) {
+            // Force retestAll because classpath changed since last run
+            // don't compute changed and non-affected classes
+            dynamicallyUpdateExcludes(null);
+            // Make nonAffected empty so dependencies can be updated
+            nonAffectedTests.clear();
+            Writer.writeClassPath(cpString, artifactsDir);
+            Writer.writeJarChecksums(testDependencyElements, artifactsDir, jarCheckSums);
+        } else if (retestAll) {
             // Force retestAll but compute changes and affected tests
             setChangedAndNonaffected();
             dynamicallyUpdateExcludes(null);
@@ -140,12 +144,80 @@ public class RunTask extends DiffTask {
                 + Writer.millsToSeconds(endUpdateTime - startUpdateTime));
     }
 
-    private void dynamicallyUpdateExcludes(List<String> excludePaths) {
-        if (excludePaths == null) {
-            System.clearProperty(STARTS_EXCLUDE_PROPERTY);
-        } else {
-            System.setProperty(STARTS_EXCLUDE_PROPERTY, Arrays.toString(excludePaths.toArray(new String[0])));
+    private List<String> getCleanClassPath(String cp) {
+        // TODO refactor
+        List<String> cpPaths = new ArrayList<>();
+        String[] paths = cp.split(File.pathSeparator);
+        String classes = getClassDir().toString();
+        for (int i = 0; i < paths.length; i++) {
+            // TODO: should we also exclude SNAPSHOTS from same project?
+            if (paths[i].contains(classes)) {
+                continue;
+            }
+            cpPaths.add(paths[i]);
         }
+        return cpPaths;
+    }
+
+    private boolean isSameClassPath(List<String> sfPathString) throws GradleException {
+        // TODO refactor
+        if (sfPathString.isEmpty()) {
+            return true;
+        }
+        String oldSfPathFileName = Paths.get(getArtifactsDir(), SF_CLASSPATH).toString();
+        if (!new File(oldSfPathFileName).exists()) {
+            return false;
+        }
+        try {
+            List<String> oldClassPathLines = Files.readAllLines(Paths.get(oldSfPathFileName));
+            if (oldClassPathLines.size() != 1) {
+                throw new GradleException(SF_CLASSPATH + " is corrupt! Expected only 1 line.");
+            }
+            List<String> oldClassPathelements = getCleanClassPath(oldClassPathLines.get(0));
+            // comparing lists and not sets in case order changes
+            if (sfPathString.equals(oldClassPathelements)) {
+                return true;
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        return false;
+    }
+
+    private boolean hasSameJarChecksum(List<String> cleanSfClassPath) {
+        if (cleanSfClassPath.isEmpty()) {
+            return true;
+        }
+        String oldChecksumPathFileName = Paths.get(getArtifactsDir(), JAR_CHECKSUMS).toString();
+        if (!new File(oldChecksumPathFileName).exists()) {
+            return false;
+        }
+        boolean noException = true;
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(oldChecksumPathFileName));
+            Map<String, String> checksumMap = new HashMap<>();
+            for (String line : lines) {
+                String[] elems = line.split(COMMA);
+                checksumMap.put(elems[0], elems[1]);
+            }
+            jarCheckSums = new ArrayList<>();
+            for (String path : cleanSfClassPath) {
+                Pair<String, String> pair = Writer.getJarToChecksumMapping(path);
+                jarCheckSums.add(pair);
+                String oldCS = checksumMap.get(pair.getKey());
+                noException &= pair.getValue().equals(oldCS);
+            }
+        } catch (IOException ioe) {
+            noException = false;
+            // reset to null because we don't know what/when exception happened
+            jarCheckSums = null;
+            ioe.printStackTrace();
+        }
+        return noException;
+    }
+
+    private void dynamicallyUpdateExcludes(List<String> excludePaths) {
+        if (excludePaths == null) return;
         TaskContainer allTasks = getProject().getTasks();
         for (Task task : allTasks) {
             if (task instanceof Test) {
