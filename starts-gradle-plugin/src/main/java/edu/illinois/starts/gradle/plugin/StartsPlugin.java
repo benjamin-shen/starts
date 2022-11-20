@@ -3,18 +3,14 @@
  */
 package edu.illinois.starts.gradle.plugin;
 
-import edu.illinois.starts.gradle.plugin.tasks.*;
+import edu.illinois.starts.gradle.plugin.tasks.CleanTask;
+import edu.illinois.starts.gradle.plugin.tasks.DiffTask;
+import edu.illinois.starts.gradle.plugin.tasks.HelpTask;
+import edu.illinois.starts.gradle.plugin.tasks.RunTask;
+import edu.illinois.starts.gradle.plugin.tasks.StartsTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.tasks.TaskContainer;
-import org.gradle.api.tasks.testing.Test;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
-import static edu.illinois.starts.constants.StartsConstants.STARTS_EXCLUDE_PROPERTY;
 
 /**
  * STARTS Gradle Plugin

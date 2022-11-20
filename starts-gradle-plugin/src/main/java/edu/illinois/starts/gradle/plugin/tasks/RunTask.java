@@ -15,7 +15,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 /**
@@ -30,6 +35,7 @@ public class RunTask extends DiffTask {
     protected boolean writeNonAffected = false;
     protected boolean writeChangedClasses = false;
     protected List<Pair> jarCheckSums = null;
+    protected List<String> excludePaths = new ArrayList<>();
 
     @Input
     public boolean getUpdateRunChecksums() {
@@ -64,6 +70,7 @@ public class RunTask extends DiffTask {
     public void setRetestAll(String retestAll) {
         this.retestAll = retestAll.equals(TRUE);
     }
+
     @Input
     public boolean getWriteNonAffected() {
         return this.writeNonAffected;
@@ -92,8 +99,6 @@ public class RunTask extends DiffTask {
     public void setWriteChangedClasses(String writeChangedClasses) {
         this.writeChangedClasses = writeChangedClasses.equals(TRUE);
     }
-
-    protected List<String> excludePaths = new ArrayList<>();
 
     @TaskAction
     public void execute() {

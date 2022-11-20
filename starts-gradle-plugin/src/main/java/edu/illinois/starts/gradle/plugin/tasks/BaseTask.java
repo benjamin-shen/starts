@@ -21,6 +21,7 @@ import org.gradle.internal.classpath.DefaultClassPath;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +29,6 @@ import java.util.Set;
 import java.util.logging.Level;
 
 public class BaseTask extends DefaultTask implements StartsConstants {
-    @Internal
-    private File classDir;
-    @Internal
-    private File testClassDir;
     protected boolean filterLib = true;
     protected boolean useThirdParty = false;
     protected DependencyFormat depFormat = DependencyFormat.ZLC;
@@ -46,8 +43,14 @@ public class BaseTask extends DefaultTask implements StartsConstants {
     protected String artifactsDir;
     @Internal
     protected ClassPath testClassPath;
+    protected Set<String> nonAffectedTests = new HashSet<>();
+    protected Set<String> changedClasses = new HashSet<>();
     @Internal
     Set<String> allClasses;
+    @Internal
+    private File classDir;
+    @Internal
+    private File testClassDir;
 
     @Input
     public boolean getFilterLib() {
@@ -157,16 +160,13 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         this.loggingLevel = Level.parse(loggingLevel);
     }
 
-    protected Set<String> nonAffectedTests = new HashSet<>();
-    protected Set<String> changedClasses = new HashSet<>();
-
     protected void printResult(Set<String> set, String title) {
         Writer.writeToLog(set, title, Logger.getGlobal());
     }
 
     protected File getClassDir () {
         if (classDir == null) {
-            classDir = Paths.get(getProject().getBuildDir().toString(), "classes", "java").toFile();;
+            classDir = Paths.get(getProject().getBuildDir().toString(), "classes", "java").toFile();
         }
         return classDir;
     }
@@ -202,9 +202,7 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         if (testClassPath == null) {
             Set<File> files = getProject().getConfigurations().getByName("testRuntimeClasspath").getFiles();
             if (getClassDir().isDirectory()) {
-                for (File child : getClassDir().listFiles()) {
-                    files.add(child);
-                }
+                Collections.addAll(files, getClassDir().listFiles());
             }
             testClassPath = DefaultClassPath.of(files);
         }

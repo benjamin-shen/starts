@@ -5,7 +5,6 @@ import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.util.Logger;
 import org.gradle.api.tasks.TaskAction;
 
-import java.util.Arrays;
 import java.util.logging.Level;
 
 /**
