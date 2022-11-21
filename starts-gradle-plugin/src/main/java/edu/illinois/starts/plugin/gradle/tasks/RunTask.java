@@ -1,4 +1,4 @@
-package edu.illinois.starts.gradle.plugin.tasks;
+package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.util.Logger;
