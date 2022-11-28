@@ -1,4 +1,4 @@
-package edu.illinois.starts.gradle.plugin.tasks;
+package edu.illinois.starts.plugin.gradle.tasks;
 
 import org.codehaus.groovy.reflection.ReflectionUtils;
 import org.gradle.api.DefaultTask;

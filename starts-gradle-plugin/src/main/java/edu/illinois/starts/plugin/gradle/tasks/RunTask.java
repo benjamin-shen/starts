@@ -1,4 +1,4 @@
-package edu.illinois.starts.gradle.plugin.tasks;
+package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.util.Logger;
@@ -129,8 +129,8 @@ public class RunTask extends DiffTask {
             dynamicallyUpdateExcludes(null);
             // Make nonAffected empty so dependencies can be updated
             nonAffectedTests.clear();
-            Writer.writeClassPath(cpString, artifactsDir);
-            Writer.writeJarChecksums(testDependencyElements, artifactsDir, jarCheckSums);
+            Writer.writeClassPath(cpString, getArtifactsDir());
+            Writer.writeJarChecksums(testDependencyElements, getArtifactsDir(), jarCheckSums);
         } else if (retestAll) {
             // Force retestAll but compute changes and affected tests
             setChangedAndNonaffected();

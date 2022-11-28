@@ -1,4 +1,4 @@
-package edu.illinois.starts.gradle.plugin.tasks;
+package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.enums.DependencyFormat;
@@ -11,6 +11,7 @@ import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Result;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.artifacts.UnknownConfigurationException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.options.Option;
@@ -197,10 +198,15 @@ public class BaseTask extends DefaultTask implements StartsConstants {
         return loader;
     }
 
-    public ClassPath getTestClassPath() {
+    public ClassPath getTestClassPath() throws GradleException {
         long start = System.currentTimeMillis();
         if (testClassPath == null) {
-            Set<File> files = getProject().getConfigurations().getByName("testRuntimeClasspath").getFiles();
+            Set<File> files;
+            try {
+                files = getProject().getConfigurations().getByName("testRuntimeClasspath").getFiles();
+            } catch (UnknownConfigurationException uce) {
+                throw new GradleException("STARTS Gradle Plugin requires the 'java' plugin.");
+            }
             if (getClassDir().isDirectory()) {
                 Collections.addAll(files, getClassDir().listFiles());
             }
