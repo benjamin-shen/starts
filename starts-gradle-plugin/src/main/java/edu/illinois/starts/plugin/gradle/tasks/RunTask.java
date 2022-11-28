@@ -1,8 +1,11 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.StartsPluginException;
+import edu.illinois.starts.plugin.StartsPluginRunGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
+import lombok.Setter;
 import org.gradle.api.GradleException;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.Input;
@@ -16,17 +19,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
 /**
  * Prepares for test runs by writing non-affected tests in the excludesFile.
  */
-public class RunTask extends DiffTask {
+public class RunTask extends DiffTask implements StartsPluginRunGoal {
     public static final String NAME = "startsRun";
     public static final String DESCRIPTION = "Prepares for test runs by writing non-affected tests in the excludesFile.";
 
@@ -34,7 +35,9 @@ public class RunTask extends DiffTask {
     protected boolean retestAll = false;
     protected boolean writeNonAffected = false;
     protected boolean writeChangedClasses = false;
-    protected List<Pair> jarCheckSums = null;
+
+    @Setter
+    protected List<Pair<String, String>> jarCheckSums = null;
     protected List<String> excludePaths = new ArrayList<>();
 
     @Input
@@ -102,25 +105,29 @@ public class RunTask extends DiffTask {
 
     @TaskAction
     public void execute() {
-        Logger logger = Logger.getGlobal();
-        logger.setLoggingLevel(loggingLevel);
+        try {
+            Logger logger = Logger.getGlobal();
+            logger.setLoggingLevel(loggingLevel);
 
-        long start = System.currentTimeMillis();
-        run();
-        Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
-        if (writeNonAffected || logger.getLoggingLevel().intValue() <= Level.FINEST.intValue()) {
-            Writer.writeToFile(nonAffectedTests, "non-affected-tests", getArtifactsDir());
+            long start = System.currentTimeMillis();
+            run();
+            Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
+            if (writeNonAffected || logger.getLoggingLevel().intValue() <= Level.FINEST.intValue()) {
+                Writer.writeToFile(nonAffectedTests, "non-affected-tests", getArtifactsDir());
+            }
+            if (allTests.equals(nonAffectedTests)) {
+                logger.log(Level.INFO, STARS_RUN_STARS);
+                logger.log(Level.INFO, NO_TESTS_ARE_SELECTED_TO_RUN);
+            }
+            long end = System.currentTimeMillis();
+            System.setProperty(PROFILE_END_OF_RUN_MOJO, Long.toString(end));
+            logger.log(Level.FINE, PROFILE_RUN_MOJO_TOTAL + Writer.millsToSeconds(end - start));
+        } catch (StartsPluginException spe) {
+            throw new GradleException(spe.getMessage(), spe.getCause());
         }
-        if (allTests.equals(nonAffectedTests)) {
-            logger.log(Level.INFO, STARS_RUN_STARS);
-            logger.log(Level.INFO, NO_TESTS_ARE_SELECTED_TO_RUN);
-        }
-        long end = System.currentTimeMillis();
-        System.setProperty(PROFILE_END_OF_RUN_MOJO, Long.toString(end));
-        logger.log(Level.FINE, PROFILE_RUN_MOJO_TOTAL + Writer.millsToSeconds(end - start));
     }
 
-    protected void run() {
+    protected void run() throws StartsPluginException {
         String cpString = getTestClassPath().toString();
         List<String> testDependencyElements = getCleanClassPath(cpString);
         if (!isSameClassPath(testDependencyElements) || !hasSameJarChecksum(testDependencyElements)) {
@@ -142,15 +149,13 @@ public class RunTask extends DiffTask {
         }
         long startUpdateTime = System.currentTimeMillis();
         if (updateRunChecksums) {
-            updateForNextRun();
+            updateForNextRun(nonAffectedTests);
         }
         long endUpdateTime = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, PROFILE_STARTS_MOJO_UPDATE_TIME
                 + Writer.millsToSeconds(endUpdateTime - startUpdateTime));
     }
-
-    private List<String> getCleanClassPath(String cp) {
-        // TODO refactor
+    public List<String> getCleanClassPath(String cp) {
         List<String> cpPaths = new ArrayList<>();
         String[] paths = cp.split(File.pathSeparator);
         String classes = getClassDir().toString();
@@ -164,8 +169,7 @@ public class RunTask extends DiffTask {
         return cpPaths;
     }
 
-    private boolean isSameClassPath(List<String> sfPathString) throws GradleException {
-        // TODO refactor
+    public boolean isSameClassPath(List<String> sfPathString) throws StartsPluginException {
         if (sfPathString.isEmpty()) {
             return true;
         }
@@ -176,7 +180,7 @@ public class RunTask extends DiffTask {
         try {
             List<String> oldClassPathLines = Files.readAllLines(Paths.get(oldSfPathFileName));
             if (oldClassPathLines.size() != 1) {
-                throw new GradleException(SF_CLASSPATH + " is corrupt! Expected only 1 line.");
+                throw new StartsPluginException(SF_CLASSPATH + " is corrupt! Expected only 1 line.");
             }
             List<String> oldClassPathelements = getCleanClassPath(oldClassPathLines.get(0));
             // comparing lists and not sets in case order changes
@@ -189,37 +193,6 @@ public class RunTask extends DiffTask {
         return false;
     }
 
-    private boolean hasSameJarChecksum(List<String> cleanSfClassPath) {
-        if (cleanSfClassPath.isEmpty()) {
-            return true;
-        }
-        String oldChecksumPathFileName = Paths.get(getArtifactsDir(), JAR_CHECKSUMS).toString();
-        if (!new File(oldChecksumPathFileName).exists()) {
-            return false;
-        }
-        boolean noException = true;
-        try {
-            List<String> lines = Files.readAllLines(Paths.get(oldChecksumPathFileName));
-            Map<String, String> checksumMap = new HashMap<>();
-            for (String line : lines) {
-                String[] elems = line.split(COMMA);
-                checksumMap.put(elems[0], elems[1]);
-            }
-            jarCheckSums = new ArrayList<>();
-            for (String path : cleanSfClassPath) {
-                Pair<String, String> pair = Writer.getJarToChecksumMapping(path);
-                jarCheckSums.add(pair);
-                String oldCS = checksumMap.get(pair.getKey());
-                noException &= pair.getValue().equals(oldCS);
-            }
-        } catch (IOException ioe) {
-            noException = false;
-            // reset to null because we don't know what/when exception happened
-            jarCheckSums = null;
-            ioe.printStackTrace();
-        }
-        return noException;
-    }
 
     private void dynamicallyUpdateExcludes(List<String> excludePaths) {
         if (excludePaths == null) return;
@@ -231,7 +204,7 @@ public class RunTask extends DiffTask {
         }
     }
 
-    protected void setChangedAndNonaffected() {
+    protected void setChangedAndNonaffected() throws StartsPluginException {
         Pair<Set<String>, Set<String>> data = computeChangeData(writeChangedClasses);
         if (data != null) {
             nonAffectedTests = data.getKey();

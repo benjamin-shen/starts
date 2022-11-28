@@ -40,6 +40,7 @@ public interface StartsConstants {
     String MILLISECOND = "ms";
     String TRUE = "true";
     String FALSE = "false";
+    String STAR = "*";
 
     // Logger Messages:
     String STARS_RUN_STARS = "********** Run **********";

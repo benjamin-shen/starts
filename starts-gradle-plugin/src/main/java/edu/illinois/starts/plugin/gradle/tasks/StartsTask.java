@@ -1,7 +1,7 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
-import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.StartsPluginStartsGoal;
 import edu.illinois.starts.util.Logger;
 import org.gradle.api.tasks.TaskAction;
 
@@ -10,7 +10,7 @@ import java.util.logging.Level;
 /**
  * Invoked after running selected tests.
  */
-public class StartsTask extends RunTask implements StartsConstants {
+public class StartsTask extends RunTask implements StartsPluginStartsGoal {
     public static final String NAME = "starts";
     public static final String DESCRIPTION = "Invoked after running selected tests.";
 

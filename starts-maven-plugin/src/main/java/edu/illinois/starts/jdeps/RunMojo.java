@@ -4,33 +4,33 @@
 
 package edu.illinois.starts.jdeps;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-
+import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.maven.AgentLoader;
+import edu.illinois.starts.plugin.StartsPluginException;
+import edu.illinois.starts.plugin.StartsPluginMavenGoal;
+import edu.illinois.starts.plugin.StartsPluginRunGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
+import lombok.Setter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+
 /**
  * Prepares for test runs by writing non-affected tests in the excludesFile.
  */
 @Mojo(name = "run", requiresDependencyResolution = ResolutionScope.TEST)
-public class RunMojo extends DiffMojo {
+public class RunMojo extends DiffMojo implements StartsPluginMavenGoal, StartsPluginRunGoal, StartsConstants {
     private static final String TARGET = "target";
     /**
      * Set this to "false" to prevent checksums from being persisted to disk. This
@@ -69,30 +69,36 @@ public class RunMojo extends DiffMojo {
 
     protected Set<String> nonAffectedTests;
     protected Set<String> changedClasses;
-    protected List<Pair> jarCheckSums = null;
+
+    @Setter
+    protected List<Pair<String, String>> jarCheckSums = null;
 
     private Logger logger;
 
     public void execute() throws MojoExecutionException {
-        Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
-        logger = Logger.getGlobal();
-        long start = System.currentTimeMillis();
-        setIncludesExcludes();
-        run();
-        Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
-        if (writeNonAffected || logger.getLoggingLevel().intValue() <= Level.FINEST.intValue()) {
-            Writer.writeToFile(nonAffectedTests, "non-affected-tests", getArtifactsDir());
+        try {
+            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
+            logger = Logger.getGlobal();
+            long start = System.currentTimeMillis();
+            setIncludesExcludes();
+            run();
+            Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
+            if (writeNonAffected || logger.getLoggingLevel().intValue() <= Level.FINEST.intValue()) {
+                Writer.writeToFile(nonAffectedTests, "non-affected-tests", getArtifactsDir());
+            }
+            if (allTests.equals(nonAffectedTests)) {
+                logger.log(Level.INFO, STARS_RUN_STARS);
+                logger.log(Level.INFO, NO_TESTS_ARE_SELECTED_TO_RUN);
+            }
+            long end = System.currentTimeMillis();
+            System.setProperty(PROFILE_END_OF_RUN_MOJO, Long.toString(end));
+            logger.log(Level.FINE, PROFILE_RUN_MOJO_TOTAL + Writer.millsToSeconds(end - start));
+        } catch (StartsPluginException spe) {
+            throw new MojoExecutionException(spe.getMessage(), spe.getCause());
         }
-        if (allTests.equals(nonAffectedTests)) {
-            logger.log(Level.INFO, STARS_RUN_STARS);
-            logger.log(Level.INFO, NO_TESTS_ARE_SELECTED_TO_RUN);
-        }
-        long end = System.currentTimeMillis();
-        System.setProperty(PROFILE_END_OF_RUN_MOJO, Long.toString(end));
-        logger.log(Level.FINE, PROFILE_RUN_MOJO_TOTAL + Writer.millsToSeconds(end - start));
     }
 
-    protected void run() throws MojoExecutionException {
+    protected void run() throws MojoExecutionException, StartsPluginException {
         String cpString = Writer.pathToString(getSureFireClassPath().getClassPath());
         List<String> sfPathElements = getCleanClassPath(cpString);
         if (!isSameClassPath(sfPathElements) || !hasSameJarChecksum(sfPathElements)) {
@@ -130,71 +136,15 @@ public class RunMojo extends DiffMojo {
         }
     }
 
-    protected void setChangedAndNonaffected() throws MojoExecutionException {
+    protected void setChangedAndNonaffected() throws StartsPluginException {
         nonAffectedTests = new HashSet<>();
         changedClasses = new HashSet<>();
         Pair<Set<String>, Set<String>> data = computeChangeData(writeChangedClasses);
-        nonAffectedTests = data == null ? new HashSet<String>() : data.getKey();
-        changedClasses  = data == null ? new HashSet<String>() : data.getValue();
+        nonAffectedTests = data == null ? new HashSet<>() : data.getKey();
+        changedClasses  = data == null ? new HashSet<>() : data.getValue();
     }
 
-    private boolean isSameClassPath(List<String> sfPathString) throws MojoExecutionException {
-        if (sfPathString.isEmpty()) {
-            return true;
-        }
-        String oldSfPathFileName = Paths.get(getArtifactsDir(), SF_CLASSPATH).toString();
-        if (!new File(oldSfPathFileName).exists()) {
-            return false;
-        }
-        try {
-            List<String> oldClassPathLines = Files.readAllLines(Paths.get(oldSfPathFileName));
-            if (oldClassPathLines.size() != 1) {
-                throw new MojoExecutionException(SF_CLASSPATH + " is corrupt! Expected only 1 line.");
-            }
-            List<String> oldClassPathelements = getCleanClassPath(oldClassPathLines.get(0));
-            // comparing lists and not sets in case order changes
-            if (sfPathString.equals(oldClassPathelements)) {
-                return true;
-            }
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        }
-        return false;
-    }
-
-    private boolean hasSameJarChecksum(List<String> cleanSfClassPath) throws MojoExecutionException {
-        if (cleanSfClassPath.isEmpty()) {
-            return true;
-        }
-        String oldChecksumPathFileName = Paths.get(getArtifactsDir(), JAR_CHECKSUMS).toString();
-        if (!new File(oldChecksumPathFileName).exists()) {
-            return false;
-        }
-        boolean noException = true;
-        try {
-            List<String> lines = Files.readAllLines(Paths.get(oldChecksumPathFileName));
-            Map<String, String> checksumMap = new HashMap<>();
-            for (String line : lines) {
-                String[] elems = line.split(COMMA);
-                checksumMap.put(elems[0], elems[1]);
-            }
-            jarCheckSums = new ArrayList<>();
-            for (String path : cleanSfClassPath) {
-                Pair<String, String> pair = Writer.getJarToChecksumMapping(path);
-                jarCheckSums.add(pair);
-                String oldCS = checksumMap.get(pair.getKey());
-                noException &= pair.getValue().equals(oldCS);
-            }
-        } catch (IOException ioe) {
-            noException = false;
-            // reset to null because we don't know what/when exception happened
-            jarCheckSums = null;
-            ioe.printStackTrace();
-        }
-        return noException;
-    }
-
-    private List<String> getCleanClassPath(String cp) {
+    public List<String> getCleanClassPath(String cp) {
         List<String> cpPaths = new ArrayList<>();
         String[] paths = cp.split(File.pathSeparator);
         String classes = File.separator + TARGET +  File.separator + CLASSES;

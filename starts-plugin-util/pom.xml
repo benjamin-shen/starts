@@ -12,6 +12,18 @@
     <groupId>edu.illinois</groupId>
     <artifactId>starts-plugin-util</artifactId>
     <version>1.4-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <name>STARTS Plugin Common</name>
     <url>https://github.com/TestingResearchIllinois/starts</url>
@@ -27,5 +39,27 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <version>2.20.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.gradle</groupId>
+            <artifactId>gradle-core</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.gradle</groupId>
+            <artifactId>gradle-tooling-api</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.gradle</groupId>
+            <artifactId>gradle-base-services</artifactId>
+            <version>3.4.1</version>
+        </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>repo.gradle.org</id>
+            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
+        </repository>
+    </repositories>
 </project>

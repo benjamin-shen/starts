@@ -6,26 +6,26 @@ import edu.illinois.starts.helpers.EkstaziHelper;
 import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.helpers.ZLCHelper;
+import edu.illinois.starts.plugin.StartsPluginDiffGoal;
+import edu.illinois.starts.plugin.StartsPluginException;
+import edu.illinois.starts.plugin.StartsPluginGradleGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
-import edu.illinois.starts.util.Result;
 import edu.illinois.yasgl.DirectedGraph;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
 /**
  * Finds types that have changed since the last time they were analyzed.
  */
-public class DiffTask extends BaseTask {
+public class DiffTask extends BaseTask implements StartsPluginGradleGoal, StartsPluginDiffGoal {
     public static final String NAME = "startsDiff";
     public static final String DESCRIPTION = "Finds types that have changed since the last time they were analyzed.";
 
@@ -80,23 +80,27 @@ public class DiffTask extends BaseTask {
 
     @TaskAction
     public void execute() {
-        Logger.getGlobal().setLoggingLevel(loggingLevel);
+        try {
+            Logger.getGlobal().setLoggingLevel(loggingLevel);
 
-        Pair<Set<String>, Set<String>> data = computeChangeData(false);
-        String extraText = EMPTY;
-        if (data != null) {
-            nonAffectedTests = data.getKey();
-            changedClasses = data.getValue();
-        } else {
-            extraText = " (no RTS artifacts; likely the first run)";
-        }
-        printResult(changedClasses, "ChangedClasses" + extraText);
-        if (updateDiffChecksums) {
-            updateForNextRun();
+            Pair<Set<String>, Set<String>> data = computeChangeData(false);
+            String extraText = EMPTY;
+            if (data != null) {
+                nonAffectedTests = data.getKey();
+                changedClasses = data.getValue();
+            } else {
+                extraText = " (no RTS artifacts; likely the first run)";
+            }
+            printResult(changedClasses, "ChangedClasses" + extraText);
+            if (updateDiffChecksums) {
+                updateForNextRun(nonAffectedTests);
+            }
+        } catch (StartsPluginException spe) {
+            throw new GradleException(spe.getMessage());
         }
     }
 
-    protected Pair<Set<String>, Set<String>> computeChangeData(boolean writeChanged) {
+    protected Pair<Set<String>, Set<String>> computeChangeData(boolean writeChanged) throws StartsPluginException {
         long start = System.currentTimeMillis();
         Pair<Set<String>, Set<String>> data = null;
         if (depFormat == DependencyFormat.ZLC) {
@@ -111,47 +115,6 @@ public class DiffTask extends BaseTask {
         long end = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, "[PROFILE] COMPUTING CHANGES: " + Writer.millsToSeconds(end - start));
         return data;
-    }
-
-    protected void updateForNextRun() {
-        long start = System.currentTimeMillis();
-        String testClassPathString = getTestClassPath().toString();
-        List<String> allTests = getTestClasses("updateForNextRun");
-        Set<String> affectedTests = new HashSet<>(allTests);
-        affectedTests.removeAll(nonAffectedTests);
-        DirectedGraph<String> graph = null;
-        if (!affectedTests.isEmpty()) {
-            ClassLoader loader = createClassLoader(testClassPath);
-            //TODO: set this boolean to true only for static reflectionAnalyses with * (border, string, naive)?
-            boolean computeUnreached = true;
-            Result result = prepareForNextRun(testClassPathString, testClassPath, allTests, computeUnreached);
-            Map<String, Set<String>> testDeps = result.getTestDeps();
-            graph = result.getGraph();
-            Set<String> unreached = computeUnreached ? result.getUnreachedDeps() : new HashSet<String>();
-            if (depFormat == DependencyFormat.ZLC) {
-                ZLCHelper.updateZLCFile(testDeps, loader, getArtifactsDir(), unreached, useThirdParty, zlcFormat);
-            } else if (depFormat == DependencyFormat.CLZ) {
-                // The next line is not needed with ZLC because '*' is explicitly tracked in ZLC
-                affectedTests = result.getAffectedTests();
-                if (affectedTests == null) {
-                    throw new GradleException("Affected tests should not be null with CLZ format!");
-                }
-                try {
-                    RTSUtil.computeAndSaveNewCheckSums(getArtifactsDir(), affectedTests, testDeps, loader);
-                } catch (IOException ioe) {
-                    throw new GradleException(ioe.getMessage());
-                }
-            }
-        }
-        save(getArtifactsDir(), affectedTests, allTests, testClassPathString, graph);
-        printToTerminal(allTests, affectedTests);
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, PROFILE_UPDATE_FOR_NEXT_RUN_TOTAL + Writer.millsToSeconds(end - start));
-    }
-
-    public void printToTerminal(List<String> testClasses, Set<String> affectedTests) {
-        Logger.getGlobal().log(Level.INFO, STARTS_AFFECTED_TESTS + affectedTests.size());
-        Logger.getGlobal().log(Level.INFO, "STARTS:TotalTests: " + testClasses.size());
     }
 
     public void save(String artifactsDir, Set<String> affectedTests, List<String> testClasses,

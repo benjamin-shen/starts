@@ -4,53 +4,42 @@
 
 package edu.illinois.starts.jdeps;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-
 import edu.illinois.starts.constants.StartsConstants;
+import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
-import edu.illinois.starts.helpers.Cache;
-import edu.illinois.starts.helpers.Loadables;
-import edu.illinois.starts.helpers.PomUtil;
-import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.StartsPluginException;
+import edu.illinois.starts.plugin.StartsPluginMavenGoal;
 import edu.illinois.starts.util.Logger;
-import edu.illinois.starts.util.Result;
+import lombok.Getter;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.surefire.AbstractSurefireMojo;
 import org.apache.maven.plugin.surefire.SurefirePlugin;
 import org.apache.maven.plugin.surefire.util.DirectoryScanner;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
 import org.apache.maven.surefire.booter.Classpath;
-import org.apache.maven.surefire.booter.SurefireExecutionException;
 import org.apache.maven.surefire.testset.TestListResolver;
 import org.apache.maven.surefire.util.DefaultScanResult;
+
+import java.io.File;
+import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Base MOJO for the JDeps-Based STARTS.
  */
-abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
-    static final String STAR = "*";
+abstract class BaseMojo extends SurefirePlugin implements StartsPluginMavenGoal, StartsConstants {
     /**
      * Set this to "false" to not filter out "sun.*" and "java.*" classes from jdeps parsing.
      */
     @Parameter(property = "filterLib", defaultValue = TRUE)
+    @Getter
     protected boolean filterLib;
 
     /**
      * Set this to "false" to not add jdeps edges from 3rd party-libraries.
      */
     @Parameter(property = "useThirdParty", defaultValue = FALSE)
+    @Getter
     protected boolean useThirdParty;
 
     /**
@@ -64,6 +53,7 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
      * @see edu.illinois.starts.enums.DependencyFormat
      */
     @Parameter(property = "depFormat", defaultValue = "ZLC")
+    @Getter
     protected DependencyFormat depFormat;
 
     /**
@@ -71,6 +61,7 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
      * and standard library jars that an application may need, e.g., those in M2_REPO.
      */
     @Parameter(property = "gCache", defaultValue = "${basedir}${file.separator}jdeps-cache")
+    @Getter
     protected String graphCache;
 
     /**
@@ -78,12 +69,14 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
      * When "true" the graph is written to file after the run.
      */
     @Parameter(property = "printGraph", defaultValue = TRUE)
+    @Getter
     protected boolean printGraph;
 
     /**
      * Output filename for the graph, if printGraph == true.
      */
     @Parameter(defaultValue = "graph", readonly = true, required = true)
+    @Getter
     protected String graphFile;
 
     /**
@@ -91,80 +84,30 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
      */
     @Parameter(property = "startsLogging", defaultValue = "CONFIG")
     protected String loggingLevel;
+
+    /**
+     * Format of the ZLC dependency file deps.zlc
+     * Set to "INDEXED" to store indices of tests
+     * Set to "PLAIN_TEXT" to store full URLs of tests
+     */
+    @Parameter(property = "zlcFormat", defaultValue = "PLAIN_TEXT")
+    @Getter
+    protected ZLCFormat zlcFormat;
+
     private Classpath sureFireClassPath;
 
-    protected void printResult(Set<String> set, String title) {
-        Writer.writeToLog(set, title, Logger.getGlobal());
-    }
-
-    public String getArtifactsDir() throws MojoExecutionException {
+    public String getArtifactsDir() throws StartsPluginException {
         if (artifactsDir == null) {
             artifactsDir = basedir.getAbsolutePath() + File.separator + STARTS_DIRECTORY_PATH;
             File file = new File(artifactsDir);
             if (!file.mkdirs() && !file.exists()) {
-                throw new MojoExecutionException("I could not create artifacts dir: " + artifactsDir);
+                throw new StartsPluginException("I could not create artifacts dir: " + artifactsDir);
             }
         }
         return artifactsDir;
     }
 
-    public void setIncludesExcludes() throws MojoExecutionException {
-        long start = System.currentTimeMillis();
-        try {
-            Field projectField = AbstractSurefireMojo.class.getDeclaredField("project");
-            projectField.setAccessible(true);
-            MavenProject accessedProject = (MavenProject) projectField.get(this);
-            List<String> includes = PomUtil.getFromPom("include", accessedProject);
-            List<String> excludes = PomUtil.getFromPom("exclude", accessedProject);
-            Logger.getGlobal().log(Level.FINEST, "@@Excludes: " + excludes);
-            Logger.getGlobal().log(Level.FINEST,"@@Includes: " + includes);
-            setIncludes(includes);
-            setExcludes(excludes);
-        } catch (NoSuchFieldException nsfe) {
-            nsfe.printStackTrace();
-        } catch (IllegalAccessException iae) {
-            iae.printStackTrace();
-        }
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(setIncludesExcludes): "
-                + Writer.millsToSeconds(end - start));
-    }
-
-    public List getTestClasses(String methodName) {
-        long start = System.currentTimeMillis();
-        DefaultScanResult defaultScanResult = null;
-        try {
-            Method scanMethod = AbstractSurefireMojo.class.getDeclaredMethod("scanForTestClasses", null);
-            scanMethod.setAccessible(true);
-            defaultScanResult = (DefaultScanResult) scanMethod.invoke(this, null);
-        } catch (NoSuchMethodException nsme) {
-            nsme.printStackTrace();
-        } catch (InvocationTargetException ite) {
-            ite.printStackTrace();
-        } catch (IllegalAccessException iae) {
-            iae.printStackTrace();
-        }
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
-                + Writer.millsToSeconds(end - start));
-        return (List<String>) defaultScanResult.getFiles();
-    }
-
-    public ClassLoader createClassLoader(Classpath sfClassPath) {
-        long start = System.currentTimeMillis();
-        ClassLoader loader = null;
-        try {
-            loader = sfClassPath.createClassLoader(false, false, "MyRole");
-        } catch (SurefireExecutionException see) {
-            see.printStackTrace();
-        }
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(createClassLoader): "
-                + Writer.millsToSeconds(end - start));
-        return loader;
-    }
-
-    public Classpath getSureFireClassPath() throws MojoExecutionException {
+    public Classpath getSureFireClassPath() {
         long start = System.currentTimeMillis();
         if (sureFireClassPath == null) {
             try {
@@ -178,57 +121,6 @@ abstract class BaseMojo extends SurefirePlugin implements StartsConstants {
         Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(getSureFireClassPath): "
                 + Writer.millsToSeconds(end - start));
         return sureFireClassPath;
-    }
-
-    public Result prepareForNextRun(String sfPathString, Classpath sfClassPath, List<String> classesToAnalyze,
-                                    Set<String> nonAffected, boolean computeUnreached) throws MojoExecutionException {
-        long start = System.currentTimeMillis();
-        String m2Repo = getLocalRepository().getBasedir();
-        File jdepsCache = new File(graphCache);
-        // We store the jdk-graphs at the root of "jdepsCache" directory, with
-        // jdk.graph being the file that merges all the graphs for all standard
-        // library jars.
-        File libraryFile = new File(jdepsCache, "jdk.graph");
-        // Create the Loadables object early so we can use its helpers
-        Loadables loadables = new Loadables(classesToAnalyze, artifactsDir, sfPathString,
-                useThirdParty, filterLib, jdepsCache);
-        List<String> paths = sfClassPath != null ? sfClassPath.getClassPath() : null;
-        loadables.setTestClassPaths(paths);
-
-        long loadMoreEdges = System.currentTimeMillis();
-        Cache cache = new Cache(jdepsCache, m2Repo);
-        // 1. Load non-reflection edges from third-party libraries in the classpath
-        List<String> moreEdges = new ArrayList<>();
-        if (useThirdParty) {
-            moreEdges = cache.loadM2EdgesFromCache(sfPathString);
-        }
-        long loadM2EdgesFromCache = System.currentTimeMillis();
-        // 2. Get non-reflection edges from CUT and SDK; use (1) to build graph
-        loadables.create(new ArrayList<>(moreEdges), paths, computeUnreached);
-
-        Map<String, Set<String>> transitiveClosure = loadables.getTransitiveClosure();
-        long createLoadables = System.currentTimeMillis();
-
-        // We don't need to compute affected tests this way with ZLC format.
-        // In RTSUtil.computeAffectedTests(), we find affected tests by (a) removing nonAffected tests from the set of
-        // all tests and then (b) adding all tests that reach to * as affected if there has been a change. This is only
-        // for CLZ which does not encode information about *. ZLC already encodes and reasons about * when it finds
-        // nonAffected tests.
-        Set<String> affected = depFormat == DependencyFormat.ZLC ? null
-                : RTSUtil.computeAffectedTests(new HashSet<>(classesToAnalyze),
-                nonAffected, transitiveClosure);
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(loadMoreEdges): "
-                + Writer.millsToSeconds(loadMoreEdges - start));
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(loadM2EdgesFromCache): "
-                + Writer.millsToSeconds(loadM2EdgesFromCache - loadMoreEdges));
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(createLoadable): "
-                + Writer.millsToSeconds(createLoadables - loadM2EdgesFromCache));
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] prepareForNextRun(computeAffectedTests): "
-                + Writer.millsToSeconds(end - createLoadables));
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(prepareForNextRun(TOTAL)): "
-                + Writer.millsToSeconds(end - start));
-        return new Result(transitiveClosure, loadables.getGraph(), affected, loadables.getUnreached());
     }
 
     protected List<String> getAllClasses() {

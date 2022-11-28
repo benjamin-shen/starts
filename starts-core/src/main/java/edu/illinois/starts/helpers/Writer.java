@@ -4,6 +4,16 @@
 
 package edu.illinois.starts.helpers;
 
+import edu.illinois.starts.constants.StartsConstants;
+import edu.illinois.starts.data.ZLCData;
+import edu.illinois.starts.data.ZLCFileContent;
+import edu.illinois.starts.data.ZLCFormat;
+import edu.illinois.starts.util.Logger;
+import edu.illinois.starts.util.Pair;
+import edu.illinois.yasgl.DirectedGraph;
+import edu.illinois.yasgl.Edge;
+import org.apache.commons.codec.binary.Hex;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -22,16 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-
-import edu.illinois.starts.constants.StartsConstants;
-import edu.illinois.starts.data.ZLCData;
-import edu.illinois.starts.data.ZLCFileContent;
-import edu.illinois.starts.data.ZLCFormat;
-import edu.illinois.starts.util.Logger;
-import edu.illinois.starts.util.Pair;
-import edu.illinois.yasgl.DirectedGraph;
-import edu.illinois.yasgl.Edge;
-import org.apache.commons.codec.binary.Hex;
 
 /**
  * Utility methods for writing various data to file.
@@ -104,7 +104,7 @@ public class Writer implements StartsConstants {
         }
     }
 
-    public static void writeJarChecksums(List<String> sfPathString, String artifactsDir, List<Pair> jarCheckSums) {
+    public static void writeJarChecksums(List<String> sfPathString, String artifactsDir, List<Pair<String, String>> jarCheckSums) {
         String outFilename = Paths.get(artifactsDir, JAR_CHECKSUMS).toString();
         try (BufferedWriter writer = getWriter(outFilename)) {
             if (jarCheckSums != null) {

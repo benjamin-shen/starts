@@ -1,6 +1,8 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.helpers.FileUtil;
+import edu.illinois.starts.plugin.StartsPluginException;
+import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -14,9 +16,13 @@ public class CleanTask extends BaseTask {
 
     @TaskAction
     public void cleanArtifacts() {
-        File directory = new File(getArtifactsDir());
-        if (directory.exists()) {
-            FileUtil.delete(directory);
+        try {
+            File directory = new File(getArtifactsDir());
+            if (directory.exists()) {
+                FileUtil.delete(directory);
+            }
+        } catch (StartsPluginException spe) {
+            throw new GradleException(spe.getMessage(), spe.getCause());
         }
     }
 }
