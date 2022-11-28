@@ -11,8 +11,8 @@ jobs:
 
     strategy:
       matrix:
-        java-version: [8]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        java-version: [ 8, 15, 17 ]
+        os: [ ubuntu-latest ]
       fail-fast: false
 
     steps:
@@ -33,7 +33,10 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       - name: Build with Maven
         run: mvn -B install
-      - name: Test with Gradle
-        run: |
-          cd ./starts-gradle-plugin
-          ./gradlew test functionalTest
+      - name: Run tests
+        working-directory: ./starts-gradle-plugin
+        run: ./gradlew test
+      - name: Run functional tests
+        if: ${{ matrix.java-version >= 15 }}
+        working-directory: ./starts-gradle-plugin
+        run: ./gradlew functionalTest
