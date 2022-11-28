@@ -1,0 +1,42 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Java CI with Gradle
+
+on: push # TODO change this to be more consistent with maven workflow
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        java-version: [ 8, 9, 10, 11, 15, 16, 17 ]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java-version }}
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v2
+      - name: Cache Maven packages
+        uses: actions/cache@v2.1.4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build with Maven
+        run: mvn -B install --file pom.xml
+      - name: Run tests
+        working-directory: ./starts-gradle-plugin
+        run: ./gradlew test
+      - name: Run functional tests
+        if: ${{ matrix.java-version >= 15 }}
+        working-directory: ./starts-gradle-plugin
+        run: ./gradlew functionalTest

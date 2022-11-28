@@ -47,7 +47,7 @@ class StartsPluginFunctionalTest {
         writeString(getBuildFile(), """
                         plugins {
                             id 'java'
-                            id 'edu.illinois.starts' version '1.4-SNAPSHOT'
+                            id 'edu.illinois.starts'
                         }""".stripIndent());
     }
 
