@@ -6,6 +6,13 @@ name: Java CI with Gradle
 on: push # TODO change this to be more consistent with maven workflow
 
 jobs:
+  validation:
+    name: Validate Gradle wrapper
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: gradle/wrapper-validation-action@v1
+
   build:
     runs-on: ${{ matrix.os }}
 
@@ -21,8 +28,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java-version }}
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v2
       - name: Cache Maven packages
