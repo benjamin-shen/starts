@@ -10,6 +10,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.internal.classpath.ClassPath;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,8 +21,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * Prepares for test runs by writing non-affected tests in the excludesFile.
@@ -121,7 +124,7 @@ public class RunTask extends DiffTask {
     }
 
     protected void run() {
-        String cpString = getTestClassPath().toString();
+        String cpString = getClassPathAsString(getTestClassPath());
         List<String> testDependencyElements = getCleanClassPath(cpString);
         if (!isSameClassPath(testDependencyElements) || !hasSameJarChecksum(testDependencyElements)) {
             // Force retestAll because classpath changed since last run
@@ -147,6 +150,15 @@ public class RunTask extends DiffTask {
         long endUpdateTime = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, PROFILE_STARTS_MOJO_UPDATE_TIME
                 + Writer.millsToSeconds(endUpdateTime - startUpdateTime));
+    }
+
+    private String getClassPathAsString(ClassPath cp) {
+        List<File> cpAsFiles = cp.getAsFiles();
+        List<String> path = new ArrayList<>();
+        for (File file : cpAsFiles) {
+            path.add(file.getPath());
+        }
+        return Writer.pathToString(path);
     }
 
     private List<String> getCleanClassPath(String cp) {
