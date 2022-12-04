@@ -4,12 +4,10 @@
 
 package edu.illinois.starts.jdeps;
 
-import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.maven.AgentLoader;
 import edu.illinois.starts.plugin.StartsPluginException;
-import edu.illinois.starts.plugin.StartsPluginMavenGoal;
-import edu.illinois.starts.plugin.StartsPluginRunGoal;
+import edu.illinois.starts.plugin.goals.StartsPluginRunGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
 import lombok.Setter;
@@ -30,7 +28,7 @@ import java.util.logging.Level;
  * Prepares for test runs by writing non-affected tests in the excludesFile.
  */
 @Mojo(name = "run", requiresDependencyResolution = ResolutionScope.TEST)
-public class RunMojo extends DiffMojo implements StartsPluginMavenGoal, StartsPluginRunGoal, StartsConstants {
+public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
     private static final String TARGET = "target";
     /**
      * Set this to "false" to prevent checksums from being persisted to disk. This

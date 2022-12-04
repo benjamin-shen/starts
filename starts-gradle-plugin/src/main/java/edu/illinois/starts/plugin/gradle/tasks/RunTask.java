@@ -2,10 +2,9 @@ package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
-import edu.illinois.starts.plugin.StartsPluginRunGoal;
+import edu.illinois.starts.plugin.goals.StartsPluginRunGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
-import lombok.Setter;
 import org.gradle.api.GradleException;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.Input;
@@ -36,8 +35,11 @@ public class RunTask extends DiffTask implements StartsPluginRunGoal {
     protected boolean writeNonAffected = false;
     protected boolean writeChangedClasses = false;
 
-    @Setter
     protected List<Pair<String, String>> jarCheckSums = null;
+    public void setJarCheckSums(List<Pair<String, String>> jarCheckSums) {
+        this.jarCheckSums = jarCheckSums;
+    }
+
     protected List<String> excludePaths = new ArrayList<>();
 
     @Input

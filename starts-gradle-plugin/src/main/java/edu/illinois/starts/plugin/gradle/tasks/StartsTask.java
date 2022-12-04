@@ -1,7 +1,7 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.helpers.Writer;
-import edu.illinois.starts.plugin.StartsPluginStartsGoal;
+import edu.illinois.starts.plugin.goals.StartsPluginStartsGoal;
 import edu.illinois.starts.util.Logger;
 import org.gradle.api.tasks.TaskAction;
 

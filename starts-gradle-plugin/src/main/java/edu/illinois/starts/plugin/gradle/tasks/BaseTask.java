@@ -1,10 +1,11 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
 import edu.illinois.starts.constants.StartsConstants;
+import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
-import edu.illinois.starts.plugin.StartsPluginGradleGoal;
+import edu.illinois.starts.plugin.buildsystem.StartsPluginGradleGoal;
 import edu.illinois.starts.util.Logger;
 import lombok.Getter;
 import org.gradle.api.DefaultTask;
@@ -25,13 +26,14 @@ import java.util.Set;
 import java.util.logging.Level;
 
 public abstract class BaseTask extends DefaultTask implements StartsPluginGradleGoal, StartsConstants {
-    boolean filterLib = true;
-    boolean useThirdParty = false;
-    DependencyFormat depFormat = DependencyFormat.ZLC;
-    String graphCache;
-    boolean printGraph = true;
-    String graphFile = GRAPH;
-    Level loggingLevel = Level.CONFIG;
+    protected boolean filterLib = true;
+    protected boolean useThirdParty = false;
+    protected DependencyFormat depFormat = DependencyFormat.ZLC;
+    protected ZLCFormat zlcFormat = ZLCFormat.PLAIN_TEXT;
+    protected String graphCache;
+    protected boolean printGraph = true;
+    protected String graphFile = GRAPH;
+    protected Level loggingLevel = Level.CONFIG;
 
     @Getter
     Set<String> nonAffectedTests = new HashSet<>();
@@ -163,6 +165,21 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
             classDir = Paths.get(getProject().getBuildDir().toString(), "classes", "java").toFile();
         }
         return classDir;
+    }
+
+    @Input
+    public ZLCFormat getZlcFormat() {
+        return this.zlcFormat;
+    }
+
+    @Option(
+            option = "zlcFormat",
+            description = "Format of the ZLC dependency file deps.zlc. " +
+                    "Set to \"INDEXED\" to store indices of tests. " +
+                    "Set to \"PLAIN_TEXT\" to store full URLs of tests."
+    )
+    public void setZlcFormat(String zlcFormat) {
+        this.zlcFormat = ZLCFormat.valueOf(zlcFormat);
     }
 
     public File getTestClassDir() {

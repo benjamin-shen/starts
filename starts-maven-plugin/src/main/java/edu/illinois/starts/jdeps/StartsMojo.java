@@ -5,7 +5,7 @@
 package edu.illinois.starts.jdeps;
 
 import edu.illinois.starts.helpers.Writer;
-import edu.illinois.starts.plugin.StartsPluginStartsGoal;
+import edu.illinois.starts.plugin.goals.StartsPluginStartsGoal;
 import edu.illinois.starts.util.Logger;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;

@@ -1,11 +1,10 @@
-package edu.illinois.starts.plugin;
+package edu.illinois.starts.plugin.goals;
 
 import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
-import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.util.Logger;
-import edu.illinois.yasgl.DirectedGraph;
 
 import java.util.List;
 import java.util.Set;
@@ -26,10 +25,6 @@ public interface StartsPluginBaseGoal {
     String getGraphFile();
     ZLCFormat getZlcFormat();
 
-    default String getLocalRepositoryDir() {
-        return null;
-    };
-
     default void printResult(Set<String> set, String title) {
         Writer.writeToLog(set, title, Logger.getGlobal());
     }
@@ -37,18 +32,5 @@ public interface StartsPluginBaseGoal {
     default void printToTerminal(List<String> testClasses, Set<String> affectedTests) {
         Logger.getGlobal().log(Level.INFO, STARTS_AFFECTED_TESTS + affectedTests.size());
         Logger.getGlobal().log(Level.INFO, "STARTS:TotalTests: " + testClasses.size());
-    }
-
-    default void save(String artifactsDir, Set<String> affectedTests, List<String> testClasses,
-                      String sfPathString, DirectedGraph<String> graph) {
-        int globalLogLevel = Logger.getGlobal().getLoggingLevel().intValue();
-        if (globalLogLevel <= Level.FINER.intValue()) {
-            Writer.writeToFile(testClasses, "all-tests", artifactsDir);
-            Writer.writeToFile(affectedTests, "selected-tests", artifactsDir);
-        }
-        if (globalLogLevel <= Level.FINEST.intValue()) {
-            RTSUtil.saveForNextRun(artifactsDir, graph, isPrintGraph(), getGraphFile());
-            Writer.writeClassPath(sfPathString, artifactsDir);
-        }
     }
 }

@@ -1,28 +1,25 @@
-package edu.illinois.starts.plugin;
+package edu.illinois.starts.plugin.buildsystem;
 
 import edu.illinois.starts.enums.DependencyFormat;
 import edu.illinois.starts.helpers.Cache;
 import edu.illinois.starts.helpers.Loadables;
-import edu.illinois.starts.helpers.PomUtil;
 import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.helpers.ZLCHelper;
+import edu.illinois.starts.plugin.StartsPluginException;
+import edu.illinois.starts.plugin.goals.StartsPluginBaseGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Result;
 import edu.illinois.yasgl.DirectedGraph;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.surefire.AbstractSurefireMojo;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.surefire.booter.Classpath;
-import org.apache.maven.surefire.booter.SurefireExecutionException;
+import org.apache.maven.plugin.surefire.util.DirectoryScanner;
+import org.apache.maven.surefire.testset.TestListResolver;
 import org.apache.maven.surefire.util.DefaultScanResult;
+import org.gradle.api.GradleException;
+import org.gradle.internal.classloader.DefaultClassLoaderFactory;
+import org.gradle.internal.classpath.ClassPath;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,94 +30,52 @@ import java.util.logging.Level;
 import static edu.illinois.starts.constants.StartsConstants.PROFILE_UPDATE_FOR_NEXT_RUN_TOTAL;
 
 /**
- * Wrapper class for STARTS plugin Maven goal
+ * Wrapper class for STARTS plugin Gradle goal
  */
-public interface StartsPluginMavenGoal extends StartsPluginBaseGoal {
-    void setIncludes(List<String> includes);
-    void setExcludes(List<String> excludes);
-    ArtifactRepository getLocalRepository();
-    File getTestClassesDirectory();
-    File getClassesDirectory();
+public interface StartsPluginGradleGoal extends StartsPluginBaseGoal {
+    File getTestClassDir();
 
-    @Override
-    default String getLocalRepositoryDir() {
-        return getLocalRepository().getBasedir();
-    };
-
-    default void setIncludesExcludes() throws MojoExecutionException {
+    default ClassLoader createClassLoader(ClassPath testClassPath) {
         long start = System.currentTimeMillis();
-        try {
-            Field projectField = AbstractSurefireMojo.class.getDeclaredField("project");
-            projectField.setAccessible(true);
-            MavenProject accessedProject = (MavenProject) projectField.get(this);
-            List<String> includes = PomUtil.getFromPom("include", accessedProject);
-            List<String> excludes = PomUtil.getFromPom("exclude", accessedProject);
-            Logger.getGlobal().log(Level.FINEST, "@@Excludes: " + excludes);
-            Logger.getGlobal().log(Level.FINEST,"@@Includes: " + includes);
-            setIncludes(includes);
-            setExcludes(excludes);
-        } catch (NoSuchFieldException nsfe) {
-            nsfe.printStackTrace();
-        } catch (IllegalAccessException iae) {
-            iae.printStackTrace();
-        }
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(setIncludesExcludes): "
-                + Writer.millsToSeconds(end - start));
-    }
-
-    default List<String> getTestClasses(String methodName) {
-        long start = System.currentTimeMillis();
-        DefaultScanResult defaultScanResult = null;
-        try {
-            Method scanMethod = AbstractSurefireMojo.class.getDeclaredMethod("scanForTestClasses", null);
-            scanMethod.setAccessible(true);
-            defaultScanResult = (DefaultScanResult) scanMethod.invoke(this, null);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException exception) {
-            exception.printStackTrace();
-        }
-        long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
-                + Writer.millsToSeconds(end - start));
-        return (List<String>) defaultScanResult.getFiles(); // TODO @bshen
-    }
-
-    default ClassLoader createClassLoader(Classpath sfClassPath) {
-        long start = System.currentTimeMillis();
-        ClassLoader loader = null;
-        try {
-            loader = sfClassPath.createClassLoader(false, false, "MyRole");
-        } catch (SurefireExecutionException see) {
-            see.printStackTrace();
-        }
+        ClassLoader loader = new DefaultClassLoaderFactory().createIsolatedClassLoader(testClassPath);
         long end = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(createClassLoader): "
                 + Writer.millsToSeconds(end - start));
         return loader;
     }
 
-    default Result prepareForNextRun(String sfPathString, Classpath sfClassPath, List<String> classesToAnalyze,
-                                     Set<String> nonAffected, boolean computeUnreached) throws StartsPluginException {
+    default List<String> getTestClasses(String methodName) {
+        long start = System.currentTimeMillis();
+        DirectoryScanner scanner = new DirectoryScanner(getTestClassDir(), TestListResolver.getEmptyTestListResolver());
+        DefaultScanResult defaultScanResult = scanner.scan();
+        List<String> testClasses = (List<String>) defaultScanResult.getFiles();
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
+                + Writer.millsToSeconds(end - start));
+        return testClasses;
+    }
+
+    default Result prepareForNextRun(String testClassPathString, ClassPath testClassPath, List<String> classesToAnalyze,
+                                    Set<String> nonAffected, boolean computeUnreached) throws StartsPluginException {
         // TODO @bshen refactor
         long start = System.currentTimeMillis();
-        String m2Repo = getLocalRepositoryDir();
         File jdepsCache = new File(getGraphCache());
-        // We store the jdk-graphs at the root of "jdepsCache" directory, with
-        // jdk.graph being the file that merges all the graphs for all standard
-        // library jars.
-        File libraryFile = new File(jdepsCache, "jdk.graph");
+
         // Create the Loadables object early so we can use its helpers
-        Loadables loadables = new Loadables(classesToAnalyze, getArtifactsDir(), sfPathString,
+        Loadables loadables = new Loadables(classesToAnalyze, getArtifactsDir(), testClassPathString,
                 isUseThirdParty(), isFilterLib(), jdepsCache);
-        List<String> paths = sfClassPath != null ? sfClassPath.getClassPath() : null;
+        List<String> paths = new ArrayList<>();
+        for (File file: testClassPath.getAsFiles()) {
+            paths.add(file.getPath());
+        }
         loadables.setTestClassPaths(paths);
 
         long loadMoreEdges = System.currentTimeMillis();
-        Cache cache = new Cache(jdepsCache, m2Repo);
+        Cache cache = new Cache(jdepsCache, null);
         // 1. Load non-reflection edges from third-party libraries in the classpath
         List<String> moreEdges = new ArrayList<>();
         if (isUseThirdParty()) {
-            moreEdges = cache.loadM2EdgesFromCache(sfPathString);
+            moreEdges = cache.loadM2EdgesFromCache(testClassPathString);
         }
         long loadM2EdgesFromCache = System.currentTimeMillis();
         // 2. Get non-reflection edges from CUT and SDK; use (1) to build graph
@@ -151,21 +106,19 @@ public interface StartsPluginMavenGoal extends StartsPluginBaseGoal {
         return new Result(transitiveClosure, loadables.getGraph(), affected, loadables.getUnreached());
     }
 
-    default void updateForNextRun(Set<String> nonAffected) throws StartsPluginException, MojoExecutionException {
+    default void updateForNextRun(Set<String> nonAffected) throws StartsPluginException {
         // TODO @bshen refactor
         long start = System.currentTimeMillis();
-        Classpath sfClassPath = getSureFireClassPath();
-        String sfPathString = Writer.pathToString(sfClassPath.getClassPath());
-        setIncludesExcludes();
+        String testClassPathString = getTestClassPath().toString();
         List<String> allTests = getTestClasses("updateForNextRun");
         Set<String> affectedTests = new HashSet<>(allTests);
         affectedTests.removeAll(nonAffected);
         DirectedGraph<String> graph = null;
         if (!affectedTests.isEmpty()) {
-            ClassLoader loader = createClassLoader(sfClassPath);
+            ClassLoader loader = createClassLoader(getTestClassPath());
             //TODO: set this boolean to true only for static reflectionAnalyses with * (border, string, naive)?
             boolean computeUnreached = true;
-            Result result = prepareForNextRun(sfPathString, sfClassPath, allTests, nonAffected, computeUnreached);
+            Result result = prepareForNextRun(testClassPathString, getTestClassPath(), allTests, nonAffected, computeUnreached);
             Map<String, Set<String>> testDeps = result.getTestDeps();
             graph = result.getGraph();
             Set<String> unreached = computeUnreached ? result.getUnreachedDeps() : new HashSet<>();
@@ -175,20 +128,25 @@ public interface StartsPluginMavenGoal extends StartsPluginBaseGoal {
                 // The next line is not needed with ZLC because '*' is explicitly tracked in ZLC
                 affectedTests = result.getAffectedTests();
                 if (affectedTests == null) {
-                    throw new StartsPluginException("Affected tests should not be null with CLZ format!");
+                    throw new GradleException("Affected tests should not be null with CLZ format!");
                 }
                 try {
                     RTSUtil.computeAndSaveNewCheckSums(getArtifactsDir(), affectedTests, testDeps, loader);
                 } catch (IOException ioe) {
-                    throw new StartsPluginException(ioe.getMessage(), ioe);
+                    throw new GradleException(ioe.getMessage());
                 }
             }
         }
-        save(getArtifactsDir(), affectedTests, allTests, sfPathString, graph);
+        save(getArtifactsDir(), affectedTests, allTests, testClassPathString, graph);
         printToTerminal(allTests, affectedTests);
         long end = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, PROFILE_UPDATE_FOR_NEXT_RUN_TOTAL + Writer.millsToSeconds(end - start));
     }
 
-    Classpath getSureFireClassPath();
+    // TODO @bshen remove after refactor
+    default void save(String artifactsDir, Set<String> affectedTests, List<String> allTests,
+              String testClassPathString, DirectedGraph<String> graph) {
+    }
+
+    ClassPath getTestClassPath();
 }

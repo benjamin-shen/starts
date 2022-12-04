@@ -9,7 +9,7 @@ import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
-import edu.illinois.starts.plugin.StartsPluginMavenGoal;
+import edu.illinois.starts.plugin.buildsystem.StartsPluginMavenGoal;
 import edu.illinois.starts.util.Logger;
 import lombok.Getter;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -27,7 +27,7 @@ import java.util.logging.Level;
 /**
  * Base MOJO for the JDeps-Based STARTS.
  */
-abstract class BaseMojo extends SurefirePlugin implements StartsPluginMavenGoal, StartsConstants {
+public abstract class BaseMojo extends SurefirePlugin implements StartsPluginMavenGoal, StartsConstants {
     /**
      * Set this to "false" to not filter out "sun.*" and "java.*" classes from jdeps parsing.
      */

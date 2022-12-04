@@ -1,6 +1,7 @@
-package edu.illinois.starts.plugin;
+package edu.illinois.starts.plugin.goals;
 
 import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.util.Pair;
 
 import java.io.File;

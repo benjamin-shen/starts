@@ -6,7 +6,7 @@ package edu.illinois.starts.jdeps;
 
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
-import edu.illinois.starts.plugin.StartsPluginMavenGoal;
+import edu.illinois.starts.plugin.buildsystem.StartsPluginMavenGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
