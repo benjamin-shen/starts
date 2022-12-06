@@ -130,7 +130,7 @@ public class RunTask extends DiffTask implements StartsPluginRunGoal {
     }
 
     protected void run() throws StartsPluginException {
-        String cpString = getTestClassPath().toString();
+        String cpString = getTestClassPathElements().toString();
         List<String> testDependencyElements = getCleanClassPath(cpString);
         if (!isSameClassPath(testDependencyElements) || !hasSameJarChecksum(testDependencyElements)) {
             // Force retestAll because classpath changed since last run

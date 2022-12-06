@@ -8,17 +8,22 @@ import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.plugin.buildsystem.StartsPluginGradleGoal;
 import edu.illinois.starts.util.Logger;
 import lombok.Getter;
+import org.apache.maven.plugin.surefire.util.DirectoryScanner;
+import org.apache.maven.surefire.testset.TestListResolver;
+import org.apache.maven.surefire.util.DefaultScanResult;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.UnknownConfigurationException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.internal.classloader.DefaultClassLoaderFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -44,7 +49,7 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
     @Internal
     protected String artifactsDir;
     @Internal
-    protected ClassPath testClassPath;
+    protected ClassPath testClassPathElements;
     @Internal
     Set<String> allClasses;
     @Internal
@@ -162,7 +167,7 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
 
     public File getClassDir () {
         if (classDir == null) {
-            classDir = Paths.get(getProject().getBuildDir().toString(), "classes", "java").toFile();
+            classDir = StartsPluginGradleGoal.super.getClassDir();
         }
         return classDir;
     }
@@ -184,14 +189,14 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
 
     public File getTestClassDir() {
         if (testClassDir == null) {
-            testClassDir = Paths.get(getClassDir().toString(), "test").toFile();
+            testClassDir = StartsPluginGradleGoal.super.getTestClassDir();
         }
         return testClassDir;
     }
 
-    public ClassPath getTestClassPath() throws GradleException {
-        long start = System.currentTimeMillis();
-        if (testClassPath == null) {
+    public ClassPath getTestClassPathElements() throws GradleException {
+        if (testClassPathElements == null) {
+            long start = System.currentTimeMillis();
             Set<File> files;
             try {
                 files = getProject().getConfigurations().getByName("testRuntimeClasspath").getFiles();
@@ -201,13 +206,46 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
             if (getClassDir().isDirectory()) {
                 Collections.addAll(files, getClassDir().listFiles());
             }
-            testClassPath = DefaultClassPath.of(files);
+            testClassPathElements = DefaultClassPath.of(files);
+            Logger.getGlobal().log(Level.FINEST, "TEST-CLASSPATH: " + testClassPathElements);
+            long end = System.currentTimeMillis();
+            Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(getTestClassPathElements): "
+                    + Writer.millsToSeconds(end - start));
         }
-        Logger.getGlobal().log(Level.FINEST, "TEST-CLASSPATH: " + testClassPath);
+        return testClassPathElements;
+    }
+
+    public String getTestClassPathElementsString() {
+        return testClassPathElements.toString();
+    }
+
+    public List<String> getTestClassPathElementsPaths() {
+        List<String> paths = new ArrayList<>();
+        List<File> files = testClassPathElements.getAsFiles();
+        for (File file: files) {
+            paths.add(file.getPath());
+        }
+        return paths;
+    }
+
+    public List<String> getTestClasses(String methodName) {
+        long start = System.currentTimeMillis();
+        DirectoryScanner scanner = new DirectoryScanner(getTestClassDir(), TestListResolver.getEmptyTestListResolver());
+        DefaultScanResult defaultScanResult = scanner.scan();
+        List<String> testClasses = (List<String>) defaultScanResult.getFiles();
         long end = System.currentTimeMillis();
-        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(getTestClassPath): "
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
                 + Writer.millsToSeconds(end - start));
-        return testClassPath;
+        return testClasses;
+    }
+
+    protected ClassLoader createClassLoader(ClassPath testClassPathElements) {
+        long start = System.currentTimeMillis();
+        ClassLoader loader = new DefaultClassLoaderFactory().createIsolatedClassLoader("MyRole", testClassPathElements);
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(createClassLoader): "
+                + Writer.millsToSeconds(end - start));
+        return loader;
     }
 
     private void scanFiles(File file, Set<String> acc) {
@@ -223,7 +261,7 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
     protected Set<String> getAllClasses() {
         if (allClasses == null) {
             allClasses = new HashSet<>();
-            List<File> testClassesDirs = getTestClassPath().getAsFiles();
+            List<File> testClassesDirs = getTestClassPathElements().getAsFiles();
             File classesDir = getProject().getBuildDir();
             for (File file : testClassesDirs) {
                 scanFiles(file, allClasses);

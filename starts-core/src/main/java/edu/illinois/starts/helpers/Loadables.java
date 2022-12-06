@@ -4,6 +4,13 @@
 
 package edu.illinois.starts.helpers;
 
+import edu.illinois.starts.constants.StartsConstants;
+import edu.illinois.starts.util.ChecksumUtil;
+import edu.illinois.starts.util.Logger;
+import edu.illinois.yasgl.DirectedGraph;
+import edu.illinois.yasgl.DirectedGraphBuilder;
+import org.ekstazi.util.Types;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,14 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-
-import edu.illinois.starts.constants.StartsConstants;
-import edu.illinois.starts.util.ChecksumUtil;
-import edu.illinois.starts.util.Logger;
-import edu.illinois.yasgl.DirectedGraph;
-import edu.illinois.yasgl.DirectedGraphBuilder;
-import org.apache.maven.surefire.booter.Classpath;
-import org.ekstazi.util.Types;
 
 /**
  * Utility methods for loading several things from disk.
@@ -32,20 +31,20 @@ public class Loadables implements StartsConstants {
     List<String> extraEdges;
     private List<String> classesToAnalyze;
     private File cache;
-    private String testClassPathString;
+    private String testClassPathElementsString;
     private DirectedGraph<String> graph;
     private Map<String, Set<String>> transitiveClosure;
     private Set<String> unreached;
     private boolean filterLib;
     private boolean useThirdParty;
-    private List<String> testClassPaths;
+    private List<String> testClassPathElements;
     private String artifactsDir;
 
-    public Loadables(List<String> classesToAnalyze, String artifactsDir, String testClassPathString,
+    public Loadables(List<String> classesToAnalyze, String artifactsDir, String testClassPathElementsString,
                      boolean useThirdParty, boolean filterLib, File cache) {
         this.classesToAnalyze = classesToAnalyze;
         this.artifactsDir = artifactsDir;
-        this.testClassPathString = testClassPathString;
+        this.testClassPathElementsString = testClassPathElementsString;
         this.filterLib = filterLib;
         this.cache = cache;
         this.useThirdParty = useThirdParty;
@@ -67,8 +66,8 @@ public class Loadables implements StartsConstants {
         // There is a cache of all third party libraries, remove third-party jars from jdeps classpath
         // ASSUMPTION: local dependencies (modules in the same mvn project) are directories, not jars
         List<String> localPaths = new ArrayList<>();
-        if (testClassPaths != null) {
-            for (String path : testClassPaths) {
+        if (testClassPathElements != null) {
+            for (String path : testClassPathElements) {
                 if (!path.endsWith(JAR_EXTENSION) && new File(path).exists()) {
                     localPaths.add(path);
                 }
@@ -77,13 +76,13 @@ public class Loadables implements StartsConstants {
         return localPaths;
     }
 
-    public Loadables create(List<String> moreEdges, List<String> testClassPath,
+    public Loadables create(List<String> moreEdges, List<String> testClassPathElements,
                             boolean computeUnreached) {
-        setTestClassPaths(testClassPath);
+        setTestClassPathElements(testClassPathElements);
         LOGGER.log(Level.FINEST, "More: " + moreEdges.size());
         extraEdges = moreEdges;
         long startTime = System.currentTimeMillis();
-        deps = getDepMap(testClassPathString, classesToAnalyze);
+        deps = getDepMap(testClassPathElementsString, classesToAnalyze);
         long jdepsTime = System.currentTimeMillis();
         graph = makeGraph(deps, extraEdges);
         long graphBuildingTime = System.currentTimeMillis();
@@ -218,7 +217,7 @@ public class Loadables implements StartsConstants {
         return tcPerTest;
     }
 
-    public void setTestClassPaths(List<String> testClassPaths) {
-        this.testClassPaths = testClassPaths;
+    public void setTestClassPathElements(List<String> testClassPathElements) {
+        this.testClassPathElements = testClassPathElements;
     }
 }

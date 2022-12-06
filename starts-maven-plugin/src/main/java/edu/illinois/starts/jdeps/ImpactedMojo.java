@@ -14,12 +14,15 @@ import edu.illinois.starts.util.Pair;
 import edu.illinois.starts.util.Result;
 import edu.illinois.yasgl.DirectedGraph;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.surefire.util.DirectoryScanner;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.surefire.booter.Classpath;
+import org.apache.maven.surefire.testset.TestListResolver;
+import org.apache.maven.surefire.util.DefaultScanResult;
 
 import java.util.HashSet;
 import java.util.List;
@@ -106,14 +109,21 @@ public class ImpactedMojo extends DiffMojo implements StartsPluginMavenGoal {
         }
     }
 
-    private void updateForNextRun(List<String> allClasses) throws MojoExecutionException, StartsPluginException {
+    private List<String> getAllClasses() {
+        DirectoryScanner testScanner = new DirectoryScanner(getTestClassesDirectory(), new TestListResolver(STAR));
+        DirectoryScanner classScanner = new DirectoryScanner(getClassesDirectory(), new TestListResolver(STAR));
+        DefaultScanResult scanResult = classScanner.scan().append(testScanner.scan());
+        return scanResult.getFiles();
+    }
+
+    private void updateForNextRun(List<String> allClasses) throws StartsPluginException {
         long start = System.currentTimeMillis();
         Classpath sfClassPath = getSureFireClassPath();
         String sfPathString = Writer.pathToString(sfClassPath.getClassPath());
         ClassLoader loader = createClassLoader(sfClassPath);
-        Result result = prepareForNextRun(sfPathString, sfClassPath, allClasses, new HashSet<String>(), false);
+        Result result = prepareForNextRun(sfPathString, sfClassPath.getClassPath(), allClasses, new HashSet<>(), false);
         ZLCHelper zlcHelper = new ZLCHelper();
-        zlcHelper.updateZLCFile(result.getTestDeps(), loader, getArtifactsDir(), new HashSet<String>(), useThirdParty,
+        zlcHelper.updateZLCFile(result.getTestDeps(), loader, getArtifactsDir(), new HashSet<>(), useThirdParty,
                 zlcFormat);
         long end = System.currentTimeMillis();
         if (writePath || logger.getLoggingLevel().intValue() <= Level.FINER.intValue()) {

@@ -100,10 +100,8 @@
                     <execution>
                         <id>integration-test</id>
                         <goals>
-                            <!--              <goal>install</goal>-->
-                            <!--              <goal>integration-test</goal>-->
-                            <!--              <goal>integration-test</goal>-->
-                            <!--              <goal>verify</goal>-->
+                            <!--                            <goal>install</goal>-->
+                            <!--                            <goal>run</goal>-->
                         </goals>
                     </execution>
                 </executions>

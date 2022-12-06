@@ -13,14 +13,16 @@ import edu.illinois.starts.plugin.buildsystem.StartsPluginMavenGoal;
 import edu.illinois.starts.util.Logger;
 import lombok.Getter;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
+import org.apache.maven.plugin.surefire.AbstractSurefireMojo;
 import org.apache.maven.plugin.surefire.SurefirePlugin;
-import org.apache.maven.plugin.surefire.util.DirectoryScanner;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.surefire.booter.Classpath;
-import org.apache.maven.surefire.testset.TestListResolver;
+import org.apache.maven.surefire.booter.SurefireExecutionException;
 import org.apache.maven.surefire.util.DefaultScanResult;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -94,7 +96,7 @@ public abstract class BaseMojo extends SurefirePlugin implements StartsPluginMav
     @Getter
     protected ZLCFormat zlcFormat;
 
-    private Classpath sureFireClassPath;
+    protected Classpath sureFireClassPath;
 
     public String getArtifactsDir() throws StartsPluginException {
         if (artifactsDir == null) {
@@ -123,10 +125,42 @@ public abstract class BaseMojo extends SurefirePlugin implements StartsPluginMav
         return sureFireClassPath;
     }
 
-    protected List<String> getAllClasses() {
-        DirectoryScanner testScanner = new DirectoryScanner(getTestClassesDirectory(), new TestListResolver(STAR));
-        DirectoryScanner classScanner = new DirectoryScanner(getClassesDirectory(), new TestListResolver(STAR));
-        DefaultScanResult scanResult = classScanner.scan().append(testScanner.scan());
-        return scanResult.getFiles();
+    public List<String> getTestClasses(String methodName) {
+        long start = System.currentTimeMillis();
+        DefaultScanResult defaultScanResult = null;
+        try {
+            Method scanMethod = AbstractSurefireMojo.class.getDeclaredMethod("scanForTestClasses", null);
+            scanMethod.setAccessible(true);
+            defaultScanResult = (DefaultScanResult) scanMethod.invoke(this, null);
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException exception) {
+            exception.printStackTrace();
+        }
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] " + methodName + "(getTestClasses): "
+                + Writer.millsToSeconds(end - start));
+        return (List<String>) defaultScanResult.getFiles();
+    }
+
+    protected ClassLoader createClassLoader(Classpath sfClassPath) {
+        long start = System.currentTimeMillis();
+        ClassLoader loader = null;
+        try {
+            loader = sfClassPath.createClassLoader(false, false, "MyRole");
+        } catch (SurefireExecutionException see) {
+            see.printStackTrace();
+        }
+        long end = System.currentTimeMillis();
+        Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(createClassLoader): "
+                + Writer.millsToSeconds(end - start));
+        return loader;
+    }
+
+    public String getTestClassPathElementsString() {
+        return Writer.pathToString(getTestClassPathElementsPaths());
+    }
+
+    public List<String> getTestClassPathElementsPaths() {
+        Classpath sfClassPath = sureFireClassPath;
+        return sfClassPath != null ? sfClassPath.getClassPath() : null;
     }
 }

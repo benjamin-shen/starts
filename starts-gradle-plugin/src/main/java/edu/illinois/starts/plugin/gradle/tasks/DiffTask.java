@@ -8,8 +8,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import java.util.Set;
-
 /**
  * Finds types that have changed since the last time they were analyzed.
  */
@@ -51,6 +49,10 @@ public class DiffTask extends BaseTask implements StartsPluginDiffGoal {
         this.updateDiffChecksums = updateDiffChecksums.equals(TRUE);
     }
 
+    public ClassLoader getClassLoader() {
+        return createClassLoader(testClassPathElements);
+    }
+
     @TaskAction
     public void execute() {
         try {
@@ -59,11 +61,5 @@ public class DiffTask extends BaseTask implements StartsPluginDiffGoal {
         } catch (StartsPluginException spe) {
             throw new GradleException(spe.getMessage());
         }
-    }
-
-    // TODO @bshen remove if possible
-    @Override
-    public void updateForNextRun(Set<String> nonAffected) throws StartsPluginException {
-        super.updateForNextRun(nonAffected);
     }
 }

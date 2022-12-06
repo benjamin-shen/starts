@@ -15,7 +15,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-import java.util.Set;
 import java.util.logging.Level;
 
 /**
@@ -52,9 +51,13 @@ public class DiffMojo extends BaseMojo implements StartsPluginDiffGoal {
         }
     }
 
+    public ClassLoader getClassLoader() {
+        return createClassLoader(sureFireClassPath);
+    }
+
     @Override
-    public void updateForNextRun(Set<String> nonAffected) throws StartsPluginException {
-        super.updateForNextRun(nonAffected);
+    public void setIncludesExcludes() throws StartsPluginException {
+        super.setIncludesExcludes();
     }
 }
 

@@ -51,7 +51,7 @@ public class SelectMojo extends DiffMojo implements StartsPluginMavenGoal {
         }
     }
 
-    private Set<String> computeAffectedTests() throws MojoExecutionException, StartsPluginException {
+    private Set<String> computeAffectedTests() throws StartsPluginException {
         setIncludesExcludes();
         Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
         Set<String> affectedTests = new HashSet<>(allTests);
