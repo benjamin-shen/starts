@@ -6,7 +6,6 @@ package edu.illinois.starts.jdeps;
 
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
-import edu.illinois.starts.plugin.buildsystem.StartsPluginMavenGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -25,7 +24,7 @@ import java.util.logging.Level;
  */
 @Mojo(name = "select", requiresDirectInvocation = true, requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
-public class SelectMojo extends DiffMojo implements StartsPluginMavenGoal {
+public class SelectMojo extends DiffMojo {
     /**
      * Set this to "true" to update test dependencies on disk. The default value of
      * "false" is useful for "dry runs" where one may want to see the affected
