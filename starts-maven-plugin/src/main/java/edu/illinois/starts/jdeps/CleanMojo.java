@@ -7,6 +7,7 @@ package edu.illinois.starts.jdeps;
 import java.io.File;
 
 import edu.illinois.starts.helpers.FileUtil;
+import edu.illinois.starts.plugin.StartsPluginException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 
@@ -16,9 +17,13 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo(name = "clean", requiresDirectInvocation = true)
 public class CleanMojo extends BaseMojo {
     public void execute() throws MojoExecutionException {
-        File directory = new File(getArtifactsDir());
-        if (directory.exists()) {
-            FileUtil.delete(directory);
+        try {
+            File directory = new File(getArtifactsDir());
+            if (directory.exists()) {
+                FileUtil.delete(directory);
+            }
+        } catch (StartsPluginException spe) {
+            throw new MojoExecutionException(spe.getMessage(), spe.getCause());
         }
     }
 }

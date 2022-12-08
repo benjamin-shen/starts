@@ -8,8 +8,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 
-import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -24,7 +24,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  */
 @Mojo(name = "select", requiresDirectInvocation = true, requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
-public class SelectMojo extends DiffMojo implements StartsConstants {
+public class SelectMojo extends DiffMojo {
     /**
      * Set this to "true" to update test dependencies on disk. The default value of
      * "false" is useful for "dry runs" where one may want to see the affected
@@ -36,17 +36,21 @@ public class SelectMojo extends DiffMojo implements StartsConstants {
     private Logger logger;
 
     public void execute() throws MojoExecutionException {
-        Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
-        logger = Logger.getGlobal();
-        long start = System.currentTimeMillis();
-        Set<String> affectedTests = computeAffectedTests();
-        printResult(affectedTests, "AffectedTests");
-        long end = System.currentTimeMillis();
-        logger.log(Level.FINE, PROFILE_RUN_MOJO_TOTAL + Writer.millsToSeconds(end - start));
-        logger.log(Level.FINE, PROFILE_TEST_RUNNING_TIME + 0.0);
+        try {
+            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
+            logger = Logger.getGlobal();
+            long start = System.currentTimeMillis();
+            Set<String> affectedTests = computeAffectedTests();
+            printResult(affectedTests, "AffectedTests");
+            long end = System.currentTimeMillis();
+            logger.log(Level.FINE, PROFILE_RUN_MOJO_TOTAL + Writer.millsToSeconds(end - start));
+            logger.log(Level.FINE, PROFILE_TEST_RUNNING_TIME + 0.0);
+        } catch (StartsPluginException spe) {
+            throw new MojoExecutionException(spe.getMessage(), spe.getCause());
+        }
     }
 
-    private Set<String> computeAffectedTests() throws MojoExecutionException {
+    private Set<String> computeAffectedTests() throws StartsPluginException {
         setIncludesExcludes();
         Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
         Set<String> affectedTests = new HashSet<>(allTests);

@@ -17,7 +17,7 @@ dependencies {
     implementation gradleApi()
     implementation 'edu.illinois:yasgl:1.2'
     implementation 'edu.illinois:starts-core:' + project.version
-    implementation 'edu.illinois:starts-plugin-util:' + project.version
+    implementation 'edu.illinois:starts-plugin-common:' + project.version
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 }
 

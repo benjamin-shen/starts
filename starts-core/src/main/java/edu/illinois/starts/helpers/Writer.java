@@ -104,7 +104,8 @@ public class Writer implements StartsConstants {
         }
     }
 
-    public static void writeJarChecksums(List<String> sfPathString, String artifactsDir, List<Pair> jarCheckSums) {
+    public static void writeJarChecksums(List<String> sfPathString, String artifactsDir,
+                                         List<Pair<String, String>> jarCheckSums) {
         String outFilename = Paths.get(artifactsDir, JAR_CHECKSUMS).toString();
         try (BufferedWriter writer = getWriter(outFilename)) {
             if (jarCheckSums != null) {

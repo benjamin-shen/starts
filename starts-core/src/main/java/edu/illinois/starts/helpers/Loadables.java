@@ -7,6 +7,7 @@ package edu.illinois.starts.helpers;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +20,6 @@ import edu.illinois.starts.util.ChecksumUtil;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.yasgl.DirectedGraph;
 import edu.illinois.yasgl.DirectedGraphBuilder;
-import org.apache.maven.surefire.booter.Classpath;
 import org.ekstazi.util.Types;
 
 /**
@@ -30,25 +30,37 @@ public class Loadables implements StartsConstants {
 
     Map<String, Set<String>> deps;
     List<String> extraEdges;
-    private List<String> classesToAnalyze;
-    private File cache;
-    private String testClassPathString;
+    private final List<String> classesToAnalyze;
+    private final File cache;
+    private final String testClassPathElementsString;
     private DirectedGraph<String> graph;
     private Map<String, Set<String>> transitiveClosure;
     private Set<String> unreached;
-    private boolean filterLib;
-    private boolean useThirdParty;
-    private List<String> testClassPaths;
-    private String artifactsDir;
+    private final boolean filterLib;
+    private final boolean useThirdParty;
+    private List<String> testClassPathElements;
+    private final String artifactsDir;
 
-    public Loadables(List<String> classesToAnalyze, String artifactsDir, String testClassPathString,
+    public Loadables(List<String> classesToAnalyze, String artifactsDir, String testClassPathElementsString,
                      boolean useThirdParty, boolean filterLib, File cache) {
         this.classesToAnalyze = classesToAnalyze;
         this.artifactsDir = artifactsDir;
-        this.testClassPathString = testClassPathString;
+        this.testClassPathElementsString = testClassPathElementsString;
         this.filterLib = filterLib;
         this.cache = cache;
         this.useThirdParty = useThirdParty;
+    }
+
+    public static Map<String, Set<String>> getTransitiveClosurePerClass(DirectedGraph<String> tcGraph,
+                                                                  List<String> classesToAnalyze) {
+        Map<String, Set<String>> tcPerTest = new HashMap<>();
+        for (String test : classesToAnalyze) {
+            Set<String> deps = YasglHelper.computeReachabilityFromChangedClasses(
+                    new HashSet<>(Collections.singletonList(test)), tcGraph);
+            deps.add(test);
+            tcPerTest.put(test, deps);
+        }
+        return tcPerTest;
     }
 
     public DirectedGraph<String> getGraph() {
@@ -67,8 +79,8 @@ public class Loadables implements StartsConstants {
         // There is a cache of all third party libraries, remove third-party jars from jdeps classpath
         // ASSUMPTION: local dependencies (modules in the same mvn project) are directories, not jars
         List<String> localPaths = new ArrayList<>();
-        if (testClassPaths != null) {
-            for (String path : testClassPaths) {
+        if (testClassPathElements != null) {
+            for (String path : testClassPathElements) {
                 if (!path.endsWith(JAR_EXTENSION) && new File(path).exists()) {
                     localPaths.add(path);
                 }
@@ -77,13 +89,13 @@ public class Loadables implements StartsConstants {
         return localPaths;
     }
 
-    public Loadables create(List<String> moreEdges, List<String> testClassPath,
+    public Loadables create(List<String> moreEdges, List<String> testClassPathElements,
                             boolean computeUnreached) {
-        setTestClassPaths(testClassPath);
+        setTestClassPathElements(testClassPathElements);
         LOGGER.log(Level.FINEST, "More: " + moreEdges.size());
         extraEdges = moreEdges;
         long startTime = System.currentTimeMillis();
-        deps = getDepMap(testClassPathString, classesToAnalyze);
+        deps = getDepMap(testClassPathElementsString, classesToAnalyze);
         long jdepsTime = System.currentTimeMillis();
         graph = makeGraph(deps, extraEdges);
         long graphBuildingTime = System.currentTimeMillis();
@@ -165,7 +177,7 @@ public class Loadables implements StartsConstants {
             //There are no test classes, no need to waste time with jdeps
             return null;
         }
-        List<String> args = new ArrayList<>(Arrays.asList("-v"));
+        List<String> args = new ArrayList<>(Collections.singletonList("-v"));
         if (filterLib) {
             // TODO: We need a cleaner/generic way to add filters
             args.addAll(Arrays.asList("-filter", "java.*|sun.*"));
@@ -206,19 +218,7 @@ public class Loadables implements StartsConstants {
         }
     }
 
-    public static Map<String, Set<String>> getTransitiveClosurePerClass(DirectedGraph<String> tcGraph,
-                                                                  List<String> classesToAnalyze) {
-        Map<String, Set<String>> tcPerTest = new HashMap<>();
-        for (String test : classesToAnalyze) {
-            Set<String> deps = YasglHelper.computeReachabilityFromChangedClasses(
-                    new HashSet<>(Arrays.asList(test)), tcGraph);
-            deps.add(test);
-            tcPerTest.put(test, deps);
-        }
-        return tcPerTest;
-    }
-
-    public void setTestClassPaths(List<String> testClassPaths) {
-        this.testClassPaths = testClassPaths;
+    public void setTestClassPathElements(List<String> testClassPathElements) {
+        this.testClassPathElements = testClassPathElements;
     }
 }

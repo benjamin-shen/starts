@@ -1,10 +1,10 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
+import java.util.Scanner;
+
 import org.codehaus.groovy.reflection.ReflectionUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
-
-import java.util.Scanner;
 
 /**
  * Displays help message for STARTS plugin.
