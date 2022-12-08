@@ -1,5 +1,10 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.plugin.goals.StartsPluginRunGoal;
@@ -14,11 +19,6 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.api.tasks.testing.Test;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-
 /**
  * Prepares for test runs by writing non-affected tests in the excludesFile.
  */
@@ -30,6 +30,11 @@ public class RunTask extends DiffTask implements StartsPluginRunGoal {
     protected boolean retestAll = false;
     protected boolean writeNonAffected = false;
     protected boolean writeChangedClasses = false;
+    @Internal
+    protected Set<String> nonAffectedTests = new HashSet<>();
+    @Internal
+    protected List<Pair<String, String>> jarCheckSums = null;
+    protected Set<String> changedClasses = new HashSet<>();
 
     @Input
     public boolean isUpdateRunChecksums() {
@@ -94,15 +99,9 @@ public class RunTask extends DiffTask implements StartsPluginRunGoal {
         this.writeChangedClasses = writeChangedClasses.equals(TRUE);
     }
 
-    @Internal
-    protected Set<String> nonAffectedTests = new HashSet<>();
-
     public Set<String> getNonAffectedTests() {
         return nonAffectedTests;
     }
-
-    @Internal
-    protected List<Pair<String, String>> jarCheckSums = null;
 
     public List<Pair<String, String>> getJarCheckSums() {
         return jarCheckSums;
@@ -111,8 +110,6 @@ public class RunTask extends DiffTask implements StartsPluginRunGoal {
     public void setJarCheckSums(List<Pair<String, String>> jarCheckSums) {
         this.jarCheckSums = jarCheckSums;
     }
-
-    protected Set<String> changedClasses = new HashSet<>();
 
     @TaskAction
     public void execute() {

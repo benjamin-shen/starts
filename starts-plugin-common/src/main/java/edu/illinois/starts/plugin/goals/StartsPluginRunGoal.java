@@ -1,10 +1,9 @@
 package edu.illinois.starts.plugin.goals;
 
-import edu.illinois.starts.helpers.Writer;
-import edu.illinois.starts.plugin.StartsPluginException;
-import edu.illinois.starts.util.Logger;
-import edu.illinois.starts.util.Pair;
-import org.gradle.api.tasks.Internal;
+import static edu.illinois.starts.constants.StartsConstants.COMMA;
+import static edu.illinois.starts.constants.StartsConstants.JAR_CHECKSUMS;
+import static edu.illinois.starts.constants.StartsConstants.PROFILE_STARTS_MOJO_UPDATE_TIME;
+import static edu.illinois.starts.constants.StartsConstants.SF_CLASSPATH;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,12 +16,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import static edu.illinois.starts.constants.StartsConstants.COMMA;
-import static edu.illinois.starts.constants.StartsConstants.JAR_CHECKSUMS;
-import static edu.illinois.starts.constants.StartsConstants.PROFILE_STARTS_MOJO_UPDATE_TIME;
-import static edu.illinois.starts.constants.StartsConstants.SF_CLASSPATH;
+import edu.illinois.starts.helpers.Writer;
+import edu.illinois.starts.plugin.StartsPluginException;
+import edu.illinois.starts.util.Logger;
+import edu.illinois.starts.util.Pair;
+import org.gradle.api.tasks.Internal;
 
 public interface StartsPluginRunGoal extends StartsPluginDiffGoal {
+    boolean isUpdateRunChecksums();
+
+    boolean isRetestAll();
+
+    Set<String> getNonAffectedTests();
+
+    void setChangedAndNonaffected() throws StartsPluginException;
+
+    List<Pair<String, String>> getJarCheckSums();
+
+    void setJarCheckSums(List<Pair<String, String>> jarCheckSums);
+
+    void dynamicallyUpdateExcludes(List<String> excludePaths) throws StartsPluginException;
+
+    @Internal
+    String getClassesPath();
+
+    @Internal
+    String getTestClassesPath();
+
     default void run() throws StartsPluginException {
         String cpString = getTestClassPathElementsString();
         List<String> testDependencyElements = getCleanClassPath(cpString);
@@ -51,16 +71,6 @@ public interface StartsPluginRunGoal extends StartsPluginDiffGoal {
         Logger.getGlobal().log(Level.FINE, PROFILE_STARTS_MOJO_UPDATE_TIME
                 + Writer.millsToSeconds(endUpdateTime - startUpdateTime));
     }
-
-    boolean isUpdateRunChecksums();
-
-    List<Pair<String, String>> getJarCheckSums();
-
-    boolean isRetestAll();
-
-    Set<String> getNonAffectedTests();
-
-    void setChangedAndNonaffected() throws StartsPluginException;
 
     default boolean isSameClassPath(List<String> sfPathString) throws StartsPluginException {
         if (sfPathString.isEmpty()) {
@@ -119,10 +129,6 @@ public interface StartsPluginRunGoal extends StartsPluginDiffGoal {
         return noException;
     }
 
-    void setJarCheckSums(List<Pair<String, String>> jarCheckSums);
-
-    void dynamicallyUpdateExcludes(List<String> excludePaths) throws StartsPluginException;
-
     default List<String> getCleanClassPath(String cp) {
         List<String> cpPaths = new ArrayList<>();
         String[] paths = cp.split(File.pathSeparator);
@@ -137,10 +143,4 @@ public interface StartsPluginRunGoal extends StartsPluginDiffGoal {
         }
         return cpPaths;
     }
-
-    @Internal
-    String getClassesPath();
-
-    @Internal
-    String getTestClassesPath();
 }

@@ -1,5 +1,17 @@
 package edu.illinois.starts.plugin.goals;
 
+import static edu.illinois.starts.constants.StartsConstants.CHANGED_CLASSES;
+import static edu.illinois.starts.constants.StartsConstants.EMPTY;
+import static edu.illinois.starts.constants.StartsConstants.PROFILE_UPDATE_FOR_NEXT_RUN_TOTAL;
+import static edu.illinois.starts.constants.StartsConstants.STARTS_AFFECTED_TESTS;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+
 import edu.illinois.starts.enums.DependencyFormat;
 import edu.illinois.starts.helpers.EkstaziHelper;
 import edu.illinois.starts.helpers.RTSUtil;
@@ -11,23 +23,16 @@ import edu.illinois.starts.util.Pair;
 import edu.illinois.starts.util.Result;
 import edu.illinois.yasgl.DirectedGraph;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-
-import static edu.illinois.starts.constants.StartsConstants.CHANGED_CLASSES;
-import static edu.illinois.starts.constants.StartsConstants.EMPTY;
-import static edu.illinois.starts.constants.StartsConstants.PROFILE_UPDATE_FOR_NEXT_RUN_TOTAL;
-import static edu.illinois.starts.constants.StartsConstants.STARTS_AFFECTED_TESTS;
-
 public interface StartsPluginDiffGoal extends StartsPluginBaseGoal {
     boolean isCleanBytes();
+
     boolean isUpdateDiffChecksums();
 
     ClassLoader getClassLoader();
+
+    List<String> getTestClasses(String updateForNextRun);
+
+    default void setIncludesExcludes() throws StartsPluginException {}
 
     default void printToTerminal(List<String> testClasses, Set<String> affectedTests) {
         Logger.getGlobal().log(Level.INFO, STARTS_AFFECTED_TESTS + affectedTests.size());
@@ -94,7 +99,8 @@ public interface StartsPluginDiffGoal extends StartsPluginBaseGoal {
             ClassLoader loader = getClassLoader();
             //TODO: set this boolean to true only for static reflectionAnalyses with * (border, string, naive)?
             boolean computeUnreached = true;
-            Result result = prepareForNextRun(testClassPathElementsString, testClassPathElementsPaths, allTests, nonAffected, computeUnreached);
+            Result result = prepareForNextRun(testClassPathElementsString, testClassPathElementsPaths,
+                            allTests, nonAffected, computeUnreached);
             Map<String, Set<String>> testDeps = result.getTestDeps();
             graph = result.getGraph();
             Set<String> unreached = computeUnreached ? result.getUnreachedDeps() : new HashSet<>();
@@ -118,8 +124,4 @@ public interface StartsPluginDiffGoal extends StartsPluginBaseGoal {
         long end = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, PROFILE_UPDATE_FOR_NEXT_RUN_TOTAL + Writer.millsToSeconds(end - start));
     }
-
-    List<String> getTestClasses(String updateForNextRun);
-
-    default void setIncludesExcludes() throws StartsPluginException {};
 }

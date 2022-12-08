@@ -1,11 +1,11 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
+import java.util.logging.Level;
+
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.goals.StartsPluginStartsGoal;
 import edu.illinois.starts.util.Logger;
 import org.gradle.api.tasks.TaskAction;
-
-import java.util.logging.Level;
 
 /**
  * Invoked after running selected tests.

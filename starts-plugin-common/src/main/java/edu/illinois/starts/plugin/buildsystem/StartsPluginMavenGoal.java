@@ -1,5 +1,9 @@
 package edu.illinois.starts.plugin.buildsystem;
 
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.logging.Level;
+
 import edu.illinois.starts.helpers.PomUtil;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
@@ -10,16 +14,14 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.surefire.AbstractSurefireMojo;
 import org.apache.maven.project.MavenProject;
 
-import java.lang.reflect.Field;
-import java.util.List;
-import java.util.logging.Level;
-
 /**
- * Wrapper class for STARTS plugin Maven goal
+ * Wrapper class for STARTS plugin Maven goal.
  */
 public interface StartsPluginMavenGoal extends StartsPluginBaseGoal {
     ArtifactRepository getLocalRepository();
+
     void setIncludes(List<String> includes);
+
     void setExcludes(List<String> excludes);
 
     default String getLocalRepositoryDir() {

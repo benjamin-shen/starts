@@ -1,5 +1,14 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+
 import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
@@ -19,15 +28,6 @@ import org.gradle.api.tasks.options.Option;
 import org.gradle.internal.classloader.DefaultClassLoaderFactory;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.DefaultClassPath;
-
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
 
 public abstract class BaseTask extends DefaultTask implements StartsPluginGradleGoal, StartsConstants {
     protected boolean filterLib = true;
@@ -206,12 +206,6 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
                     + Writer.millsToSeconds(end - start));
         }
         return testClassPathElements;
-    }
-
-    @Internal
-    public String getLocalRepositoryDir() {
-        // unlike Maven, Gradle doesn't cache in m2Repo
-        return null;
     }
 
     @Internal

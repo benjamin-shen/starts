@@ -4,6 +4,12 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.logging.Level;
+
 import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
@@ -19,12 +25,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.surefire.booter.Classpath;
 import org.apache.maven.surefire.booter.SurefireExecutionException;
 import org.apache.maven.surefire.util.DefaultScanResult;
-
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.logging.Level;
 
 /**
  * Base MOJO for the JDeps-Based STARTS.

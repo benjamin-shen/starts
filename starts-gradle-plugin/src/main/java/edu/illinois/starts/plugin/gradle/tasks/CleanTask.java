@@ -1,11 +1,11 @@
 package edu.illinois.starts.plugin.gradle.tasks;
 
+import java.io.File;
+
 import edu.illinois.starts.helpers.FileUtil;
 import edu.illinois.starts.plugin.StartsPluginException;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.TaskAction;
-
-import java.io.File;
 
 /**
  * Removes STARTS plugin artifacts.

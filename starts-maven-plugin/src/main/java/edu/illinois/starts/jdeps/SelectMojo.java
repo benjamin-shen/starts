@@ -4,6 +4,10 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
+
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.util.Logger;
@@ -14,10 +18,6 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.logging.Level;
 
 /**
  * Finds tests affected by a change but does not run them.

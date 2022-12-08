@@ -4,12 +4,12 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.io.File;
+
 import edu.illinois.starts.helpers.FileUtil;
 import edu.illinois.starts.plugin.StartsPluginException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
-
-import java.io.File;
 
 /**
  * Removes STARTS plugin artifacts.

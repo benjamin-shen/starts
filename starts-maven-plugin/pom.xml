@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>edu.illinois</groupId>
-            <artifactId>starts-plugin-util</artifactId>
+            <artifactId>starts-plugin-common</artifactId>
             <version>1.4-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>

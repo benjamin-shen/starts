@@ -4,6 +4,11 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+
 import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.helpers.ZLCHelper;
@@ -22,11 +27,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.surefire.booter.Classpath;
 import org.apache.maven.surefire.testset.TestListResolver;
 import org.apache.maven.surefire.util.DefaultScanResult;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
 
 /**
  * Find all types that are impacted by a change.
@@ -84,13 +84,13 @@ public class ImpactedMojo extends DiffMojo {
             impacted.removeAll(nonAffected);
 
             logger.log(Level.FINEST, "CHANGED: " + changed.toString());
-            logger.log(Level.FINEST, "IMPACTED: " + impacted.toString());
+            logger.log(Level.FINEST, "IMPACTED: " + impacted);
             // 2. Optionally find newly-added classes
             if (trackNewClasses) {
                 Set<String> newClasses = new HashSet<>(allClasses);
                 Set<String> oldClasses = ZLCHelper.getExistingClasses(getArtifactsDir());
                 newClasses.removeAll(oldClasses);
-                logger.log(Level.FINEST, "NEWLY-ADDED: " + newClasses.toString());
+                logger.log(Level.FINEST, "NEWLY-ADDED: " + newClasses);
                 Writer.writeToFile(newClasses, "new-classes", getArtifactsDir());
             }
             // 3. Optionally update ZLC file for next run, using all classes in the SUT
@@ -122,7 +122,7 @@ public class ImpactedMojo extends DiffMojo {
         ClassLoader loader = createClassLoader(sfClassPath);
         Result result = prepareForNextRun(sfPathString, sfClassPath.getClassPath(), allClasses, new HashSet<>(), false);
         ZLCHelper zlcHelper = new ZLCHelper();
-        zlcHelper.updateZLCFile(result.getTestDeps(), loader, getArtifactsDir(), new HashSet<>(), useThirdParty,
+        ZLCHelper.updateZLCFile(result.getTestDeps(), loader, getArtifactsDir(), new HashSet<>(), useThirdParty,
                 zlcFormat);
         long end = System.currentTimeMillis();
         if (writePath || logger.getLoggingLevel().intValue() <= Level.FINER.intValue()) {

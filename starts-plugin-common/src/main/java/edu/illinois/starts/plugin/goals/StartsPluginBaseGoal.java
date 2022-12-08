@@ -1,5 +1,13 @@
 package edu.illinois.starts.plugin.goals;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+
 import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
 import edu.illinois.starts.helpers.Cache;
@@ -10,32 +18,27 @@ import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Result;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-
 /**
  * Interface with default methods for STARTS plugin goals (MOJOs or Gradle Tasks).
  */
 public interface StartsPluginBaseGoal {
     String getArtifactsDir() throws StartsPluginException;
+
     String getGraphCache();
+
     boolean isUseThirdParty();
+
     boolean isFilterLib();
+
     DependencyFormat getDepFormat();
+
     boolean isPrintGraph();
+
     String getGraphFile();
+
     ZLCFormat getZlcFormat();
 
     String getLocalRepositoryDir();
-
-    default void printResult(Set<String> set, String title) {
-        Writer.writeToLog(set, title, Logger.getGlobal());
-    }
 
     List<String> getTestClasses(String methodName);
 
@@ -43,8 +46,13 @@ public interface StartsPluginBaseGoal {
 
     String getTestClassPathElementsString();
 
+    default void printResult(Set<String> set, String title) {
+        Writer.writeToLog(set, title, Logger.getGlobal());
+    }
+
     default Result prepareForNextRun(String testClassPathElementsString, List<String> testClassPathElementsPaths,
-                                     List<String> classesToAnalyze, Set<String> nonAffected, boolean computeUnreached) throws StartsPluginException {
+                                     List<String> classesToAnalyze, Set<String> nonAffected, boolean computeUnreached)
+            throws StartsPluginException {
         long start = System.currentTimeMillis();
         String m2Repo = getLocalRepositoryDir();
         File jdepsCache = new File(getGraphCache());

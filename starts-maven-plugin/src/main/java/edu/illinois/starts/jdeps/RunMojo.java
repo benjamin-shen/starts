@@ -4,6 +4,13 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.maven.AgentLoader;
 import edu.illinois.starts.plugin.StartsPluginException;
@@ -16,13 +23,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-
-import java.io.File;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
 
 /**
  * Prepares for test runs by writing non-affected tests in the excludesFile.

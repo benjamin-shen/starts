@@ -4,22 +4,23 @@
 
 package edu.illinois.starts.helpers;
 
-import edu.illinois.starts.constants.StartsConstants;
-import edu.illinois.starts.util.ChecksumUtil;
-import edu.illinois.starts.util.Logger;
-import edu.illinois.yasgl.DirectedGraph;
-import edu.illinois.yasgl.DirectedGraphBuilder;
-import org.ekstazi.util.Types;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
+
+import edu.illinois.starts.constants.StartsConstants;
+import edu.illinois.starts.util.ChecksumUtil;
+import edu.illinois.starts.util.Logger;
+import edu.illinois.yasgl.DirectedGraph;
+import edu.illinois.yasgl.DirectedGraphBuilder;
+import org.ekstazi.util.Types;
 
 /**
  * Utility methods for loading several things from disk.
@@ -29,16 +30,16 @@ public class Loadables implements StartsConstants {
 
     Map<String, Set<String>> deps;
     List<String> extraEdges;
-    private List<String> classesToAnalyze;
-    private File cache;
-    private String testClassPathElementsString;
+    private final List<String> classesToAnalyze;
+    private final File cache;
+    private final String testClassPathElementsString;
     private DirectedGraph<String> graph;
     private Map<String, Set<String>> transitiveClosure;
     private Set<String> unreached;
-    private boolean filterLib;
-    private boolean useThirdParty;
+    private final boolean filterLib;
+    private final boolean useThirdParty;
     private List<String> testClassPathElements;
-    private String artifactsDir;
+    private final String artifactsDir;
 
     public Loadables(List<String> classesToAnalyze, String artifactsDir, String testClassPathElementsString,
                      boolean useThirdParty, boolean filterLib, File cache) {
@@ -48,6 +49,18 @@ public class Loadables implements StartsConstants {
         this.filterLib = filterLib;
         this.cache = cache;
         this.useThirdParty = useThirdParty;
+    }
+
+    public static Map<String, Set<String>> getTransitiveClosurePerClass(DirectedGraph<String> tcGraph,
+                                                                  List<String> classesToAnalyze) {
+        Map<String, Set<String>> tcPerTest = new HashMap<>();
+        for (String test : classesToAnalyze) {
+            Set<String> deps = YasglHelper.computeReachabilityFromChangedClasses(
+                    new HashSet<>(Collections.singletonList(test)), tcGraph);
+            deps.add(test);
+            tcPerTest.put(test, deps);
+        }
+        return tcPerTest;
     }
 
     public DirectedGraph<String> getGraph() {
@@ -164,7 +177,7 @@ public class Loadables implements StartsConstants {
             //There are no test classes, no need to waste time with jdeps
             return null;
         }
-        List<String> args = new ArrayList<>(Arrays.asList("-v"));
+        List<String> args = new ArrayList<>(Collections.singletonList("-v"));
         if (filterLib) {
             // TODO: We need a cleaner/generic way to add filters
             args.addAll(Arrays.asList("-filter", "java.*|sun.*"));
@@ -203,18 +216,6 @@ public class Loadables implements StartsConstants {
             String dest = parts[1].intern();
             builder.addEdge(src, dest);
         }
-    }
-
-    public static Map<String, Set<String>> getTransitiveClosurePerClass(DirectedGraph<String> tcGraph,
-                                                                  List<String> classesToAnalyze) {
-        Map<String, Set<String>> tcPerTest = new HashMap<>();
-        for (String test : classesToAnalyze) {
-            Set<String> deps = YasglHelper.computeReachabilityFromChangedClasses(
-                    new HashSet<>(Arrays.asList(test)), tcGraph);
-            deps.add(test);
-            tcPerTest.put(test, deps);
-        }
-        return tcPerTest;
     }
 
     public void setTestClassPathElements(List<String> testClassPathElements) {
