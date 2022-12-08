@@ -38,7 +38,7 @@ public class SelectMojo extends DiffMojo implements StartsPluginMavenGoal {
 
     public void execute() throws MojoExecutionException {
         try {
-            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
+            Logger.getGlobal().setLoggingLevel(loggingLevel);
             logger = Logger.getGlobal();
             long start = System.currentTimeMillis();
             Set<String> affectedTests = computeAffectedTests();

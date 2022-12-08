@@ -23,7 +23,7 @@ public class StartsMojo extends RunMojo implements StartsPluginStartsGoal {
     public void execute() {
         long endOfRunMojo = Long.parseLong(System.getProperty(PROFILE_END_OF_RUN_MOJO));
         Logger logger = Logger.getGlobal();
-        Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
+        Logger.getGlobal().setLoggingLevel(loggingLevel);
         long end = System.currentTimeMillis();
         logger.log(Level.FINE, PROFILE_TEST_RUNNING_TIME + Writer.millsToSeconds(end - endOfRunMojo));
         logger.log(Level.FINE, "[PROFILE] STARTS-MOJO-TOTAL: " + Writer.millsToSeconds(end - endOfRunMojo));

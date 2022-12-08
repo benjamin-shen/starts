@@ -5,6 +5,7 @@ import edu.illinois.starts.plugin.goals.StartsPluginDiffGoal;
 import edu.illinois.starts.util.Logger;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
@@ -49,6 +50,7 @@ public class DiffTask extends BaseTask implements StartsPluginDiffGoal {
         this.updateDiffChecksums = updateDiffChecksums.equals(TRUE);
     }
 
+    @Internal
     public ClassLoader getClassLoader() {
         return createClassLoader(testClassPathElements);
     }

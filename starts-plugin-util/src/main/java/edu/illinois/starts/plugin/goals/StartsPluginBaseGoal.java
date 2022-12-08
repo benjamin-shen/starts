@@ -31,15 +31,17 @@ public interface StartsPluginBaseGoal {
     String getGraphFile();
     ZLCFormat getZlcFormat();
 
-    default String getLocalRepositoryDir() {
-        return null;
-    }
+    String getLocalRepositoryDir();
 
     default void printResult(Set<String> set, String title) {
         Writer.writeToLog(set, title, Logger.getGlobal());
     }
 
     List<String> getTestClasses(String methodName);
+
+    List<String> getTestClassPathElementsPaths();
+
+    String getTestClassPathElementsString();
 
     default Result prepareForNextRun(String testClassPathElementsString, List<String> testClassPathElementsPaths,
                                      List<String> classesToAnalyze, Set<String> nonAffected, boolean computeUnreached) throws StartsPluginException {

@@ -85,7 +85,7 @@ public abstract class BaseMojo extends SurefirePlugin implements StartsPluginMav
      * Log levels as defined in java.util.logging.Level.
      */
     @Parameter(property = "startsLogging", defaultValue = "CONFIG")
-    protected String loggingLevel;
+    protected Level loggingLevel;
 
     /**
      * Format of the ZLC dependency file deps.zlc

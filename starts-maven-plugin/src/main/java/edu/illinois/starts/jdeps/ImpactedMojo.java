@@ -67,7 +67,7 @@ public class ImpactedMojo extends DiffMojo implements StartsPluginMavenGoal {
 
     public void execute() throws MojoExecutionException {
         try {
-            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
+            Logger.getGlobal().setLoggingLevel(loggingLevel);
             logger = Logger.getGlobal();
             Pair<Set<String>, Set<String>> data = computeChangeData(false);
             // 0. Find all classes in program

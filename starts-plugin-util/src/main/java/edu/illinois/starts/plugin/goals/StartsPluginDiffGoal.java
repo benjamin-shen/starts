@@ -81,10 +81,6 @@ public interface StartsPluginDiffGoal extends StartsPluginBaseGoal {
         }
     }
 
-    List<String> getTestClassPathElementsPaths();
-
-    String getTestClassPathElementsString();
-
     default void updateForNextRun(Set<String> nonAffected) throws StartsPluginException {
         long start = System.currentTimeMillis();
         setIncludesExcludes();

@@ -15,8 +15,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-import java.util.logging.Level;
-
 /**
  * Finds types that have changed since the last time they were analyzed.
  */
@@ -44,7 +42,7 @@ public class DiffMojo extends BaseMojo implements StartsPluginDiffGoal {
 
     public void execute() throws MojoExecutionException {
         try {
-            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
+            Logger.getGlobal().setLoggingLevel(loggingLevel);
             computeDiff();
         } catch (StartsPluginException spe) {
             throw new MojoExecutionException(spe.getMessage(), spe.getCause());

@@ -10,6 +10,7 @@ import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.plugin.goals.StartsPluginRunGoal;
 import edu.illinois.starts.util.Logger;
 import edu.illinois.starts.util.Pair;
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -17,7 +18,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +36,7 @@ public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
      * STARTS writes to the Surefire excludesFile, without updating test dependencies.
      */
     @Parameter(property = "updateRunChecksums", defaultValue = TRUE)
+    @Getter
     protected boolean updateRunChecksums;
 
     /**
@@ -48,6 +49,7 @@ public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
      * be written to disk.
      */
     @Parameter(property = "retestAll", defaultValue = FALSE)
+    @Getter
     protected boolean retestAll;
 
     /**
@@ -65,17 +67,18 @@ public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
     @Parameter(property = "writeChangedClasses", defaultValue = FALSE)
     protected boolean writeChangedClasses;
 
+    @Getter
     protected Set<String> nonAffectedTests;
     protected Set<String> changedClasses;
 
-    @Setter
+    @Setter @Getter
     protected List<Pair<String, String>> jarCheckSums = null;
 
     private Logger logger;
 
     public void execute() throws MojoExecutionException {
         try {
-            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
+            Logger.getGlobal().setLoggingLevel(loggingLevel);
             logger = Logger.getGlobal();
             long start = System.currentTimeMillis();
             setIncludesExcludes();
@@ -96,64 +99,29 @@ public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
         }
     }
 
-    protected void run() throws MojoExecutionException, StartsPluginException {
-        String cpString = Writer.pathToString(getSureFireClassPath().getClassPath());
-        List<String> sfPathElements = getCleanClassPath(cpString);
-        if (!isSameClassPath(sfPathElements) || !hasSameJarChecksum(sfPathElements)) {
-            // Force retestAll because classpath changed since last run
-            // don't compute changed and non-affected classes
-            dynamicallyUpdateExcludes(new ArrayList<String>());
-            // Make nonAffected empty so dependencies can be updated
-            nonAffectedTests = new HashSet<>();
-            Writer.writeClassPath(cpString, artifactsDir);
-            Writer.writeJarChecksums(sfPathElements, artifactsDir, jarCheckSums);
-        } else if (retestAll) {
-            // Force retestAll but compute changes and affected tests
-            setChangedAndNonaffected();
-            dynamicallyUpdateExcludes(new ArrayList<String>());
-        } else {
-            setChangedAndNonaffected();
-            List<String> excludePaths = Writer.fqnsToExcludePath(nonAffectedTests);
-            dynamicallyUpdateExcludes(excludePaths);
-        }
-        long startUpdateTime = System.currentTimeMillis();
-        if (updateRunChecksums) {
-            updateForNextRun(nonAffectedTests);
-        }
-        long endUpdateTime = System.currentTimeMillis();
-        logger.log(Level.FINE, PROFILE_STARTS_MOJO_UPDATE_TIME
-                + Writer.millsToSeconds(endUpdateTime - startUpdateTime));
-    }
-
-    private void dynamicallyUpdateExcludes(List<String> excludePaths) throws MojoExecutionException {
+    @Override
+    public void dynamicallyUpdateExcludes(List<String> excludePaths) throws StartsPluginException {
         if (AgentLoader.loadDynamicAgent()) {
             logger.log(Level.FINEST, "AGENT LOADED!!!");
             System.setProperty(STARTS_EXCLUDE_PROPERTY, Arrays.toString(excludePaths.toArray(new String[0])));
         } else {
-            throw new MojoExecutionException("I COULD NOT ATTACH THE AGENT");
+            throw new StartsPluginException("I COULD NOT ATTACH THE AGENT");
         }
     }
 
-    protected void setChangedAndNonaffected() throws StartsPluginException {
+    public String getClassesPath() {
+        return File.separator + TARGET +  File.separator + CLASSES;
+    }
+
+    public String getTestClassesPath() {
+        return File.separator + TARGET +  File.separator + TEST_CLASSES;
+    }
+
+    public void setChangedAndNonaffected() throws StartsPluginException {
         nonAffectedTests = new HashSet<>();
         changedClasses = new HashSet<>();
         Pair<Set<String>, Set<String>> data = computeChangeData(writeChangedClasses);
         nonAffectedTests = data == null ? new HashSet<>() : data.getKey();
         changedClasses  = data == null ? new HashSet<>() : data.getValue();
-    }
-
-    public List<String> getCleanClassPath(String cp) {
-        List<String> cpPaths = new ArrayList<>();
-        String[] paths = cp.split(File.pathSeparator);
-        String classes = File.separator + TARGET +  File.separator + CLASSES;
-        String testClasses = File.separator + TARGET + File.separator + TEST_CLASSES;
-        for (int i = 0; i < paths.length; i++) {
-            // TODO: should we also exclude SNAPSHOTS from same project?
-            if (paths[i].contains(classes) || paths[i].contains(testClasses)) {
-                continue;
-            }
-            cpPaths.add(paths[i]);
-        }
-        return cpPaths;
     }
 }

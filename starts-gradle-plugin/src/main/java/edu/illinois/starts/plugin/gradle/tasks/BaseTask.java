@@ -7,7 +7,6 @@ import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.plugin.buildsystem.StartsPluginGradleGoal;
 import edu.illinois.starts.util.Logger;
-import lombok.Getter;
 import org.apache.maven.plugin.surefire.util.DirectoryScanner;
 import org.apache.maven.surefire.testset.TestListResolver;
 import org.apache.maven.surefire.util.DefaultScanResult;
@@ -39,12 +38,6 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
     protected boolean printGraph = true;
     protected String graphFile = GRAPH;
     protected Level loggingLevel = Level.CONFIG;
-
-    @Getter
-    Set<String> nonAffectedTests = new HashSet<>();
-
-    @Getter
-    Set<String> changedClasses = new HashSet<>();
 
     @Internal
     protected String artifactsDir;
@@ -215,13 +208,21 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
         return testClassPathElements;
     }
 
-    public String getTestClassPathElementsString() {
-        return testClassPathElements.toString();
+    @Internal
+    public String getLocalRepositoryDir() {
+        // unlike Maven, Gradle doesn't cache in m2Repo
+        return null;
     }
 
+    @Internal
+    public String getTestClassPathElementsString() {
+        return getTestClassPathElements().toString();
+    }
+
+    @Internal
     public List<String> getTestClassPathElementsPaths() {
         List<String> paths = new ArrayList<>();
-        List<File> files = testClassPathElements.getAsFiles();
+        List<File> files = getTestClassPathElements().getAsFiles();
         for (File file: files) {
             paths.add(file.getPath());
         }
@@ -241,7 +242,7 @@ public abstract class BaseTask extends DefaultTask implements StartsPluginGradle
 
     protected ClassLoader createClassLoader(ClassPath testClassPathElements) {
         long start = System.currentTimeMillis();
-        ClassLoader loader = new DefaultClassLoaderFactory().createIsolatedClassLoader("MyRole", testClassPathElements);
+        ClassLoader loader = new DefaultClassLoaderFactory().createIsolatedClassLoader("MyRole", getTestClassPathElements());
         long end = System.currentTimeMillis();
         Logger.getGlobal().log(Level.FINE, "[PROFILE] updateForNextRun(createClassLoader): "
                 + Writer.millsToSeconds(end - start));

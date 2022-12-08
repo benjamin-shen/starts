@@ -18,7 +18,6 @@ dependencies {
     implementation 'edu.illinois:yasgl:1.2'
     implementation 'edu.illinois:starts-core:' + project.version
     implementation 'edu.illinois:starts-plugin-util:' + project.version
-    implementation 'org.projectlombok:lombok:1.18.22'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 }
 
