@@ -37,7 +37,7 @@ public class SelectMojo extends DiffMojo {
 
     public void execute() throws MojoExecutionException {
         try {
-            Logger.getGlobal().setLoggingLevel(loggingLevel);
+            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
             logger = Logger.getGlobal();
             long start = System.currentTimeMillis();
             Set<String> affectedTests = computeAffectedTests();

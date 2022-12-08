@@ -68,8 +68,8 @@ public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
     protected boolean writeChangedClasses;
 
     @Getter
-    protected Set<String> nonAffectedTests;
-    protected Set<String> changedClasses;
+    protected Set<String> nonAffectedTests = new HashSet<>();
+    protected Set<String> changedClasses = new HashSet<>();
 
     @Setter @Getter
     protected List<Pair<String, String>> jarCheckSums = null;
@@ -78,7 +78,7 @@ public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
 
     public void execute() throws MojoExecutionException {
         try {
-            Logger.getGlobal().setLoggingLevel(loggingLevel);
+            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
             logger = Logger.getGlobal();
             long start = System.currentTimeMillis();
             setIncludesExcludes();
@@ -118,10 +118,13 @@ public class RunMojo extends DiffMojo implements StartsPluginRunGoal {
     }
 
     public void setChangedAndNonaffected() throws StartsPluginException {
-        nonAffectedTests = new HashSet<>();
-        changedClasses = new HashSet<>();
         Pair<Set<String>, Set<String>> data = computeChangeData(writeChangedClasses);
-        nonAffectedTests = data == null ? new HashSet<>() : data.getKey();
-        changedClasses  = data == null ? new HashSet<>() : data.getValue();
+        if (data != null) {
+            nonAffectedTests = data.getKey();
+            changedClasses  = data.getValue();
+        } else {
+            nonAffectedTests.clear();
+            changedClasses.clear();
+        }
     }
 }

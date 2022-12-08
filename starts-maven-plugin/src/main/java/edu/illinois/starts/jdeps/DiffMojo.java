@@ -4,6 +4,8 @@
 
 package edu.illinois.starts.jdeps;
 
+import java.util.logging.Level;
+
 import edu.illinois.starts.plugin.StartsPluginException;
 import edu.illinois.starts.plugin.goals.StartsPluginDiffGoal;
 import edu.illinois.starts.util.Logger;
@@ -42,7 +44,7 @@ public class DiffMojo extends BaseMojo implements StartsPluginDiffGoal {
 
     public void execute() throws MojoExecutionException {
         try {
-            Logger.getGlobal().setLoggingLevel(loggingLevel);
+            Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
             computeDiff();
         } catch (StartsPluginException spe) {
             throw new MojoExecutionException(spe.getMessage(), spe.getCause());
