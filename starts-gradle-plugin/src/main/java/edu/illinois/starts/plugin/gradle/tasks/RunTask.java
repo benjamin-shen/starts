@@ -150,7 +150,10 @@ public class RunTask extends DiffTask implements StartsPluginRunGoal {
         TaskContainer allTasks = getProject().getTasks();
         for (Task task : allTasks) {
             if (task instanceof Test) {
-                ((Test) task).setExcludes(excludePaths);
+                Test test = ((Test) task);
+                Set<String> excludes = test.getExcludes();
+                excludes.addAll(excludePaths);
+                test.setExcludes(excludes);
             }
         }
     }
